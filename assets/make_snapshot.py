@@ -127,10 +127,21 @@ def journal():
     return recs
 
 
+def _strip_comments(obj):
+    """config.json carries long engineering notes in `_comment` keys. The demo
+    reads only behaviour keys, so drop the prose rather than duplicating it."""
+    if isinstance(obj, dict):
+        return {k: _strip_comments(v) for k, v in obj.items()
+                if not (k.startswith("_") or "comment" in k.lower())}
+    if isinstance(obj, list):
+        return [_strip_comments(v) for v in obj]
+    return obj
+
+
 def main():
     snap = fetch()
     snap["journal"] = journal()
-    snap["config"] = json.loads((ROOT / "config.json").read_text())
+    snap["config"] = _strip_comments(json.loads((ROOT / "config.json").read_text()))
     snap["generated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     OUT.write_text(json.dumps(snap, indent=1, default=str) + "\n")
     print(f"{OUT.relative_to(ROOT)}: ${snap['equity']:,.0f} ({snap['pct']:+.1f}%), "

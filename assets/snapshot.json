@@ -309,9 +309,7 @@
  ],
  "config": {
   "mode": "dry_run",
-  "mode_comment": "dry_run = log intended orders only (no account writes). paper = place real orders on the Alpaca PAPER account.",
   "decision_mode": "rules_only",
-  "decision_mode_comment": "rules_only = the rule stack below (score + half-OR band + leader regime + arm-C entry rules). llm = that same stack PLUS a bull/bear debate + regime gate on top. The LLM only ever REMOVES trades the rules already approved; it can never add one. Flip this flag to swap the two with zero other changes.",
   "symbols": [
    "SPY",
    "QQQ",
@@ -322,19 +320,15 @@
    "or_minutes": 15,
    "min_relative_volume": 0.92,
    "noise_band_scale": "half_or",
-   "require_outside_noise_band": true,
-   "_comment": "Arm-C score threshold (0.70) plus the half-OR noise band. Do not tune to backtest P&L: a full year of testing showed the entry signal has no usable directional edge (see docs/research.md). min_score 0.85 was measured WORSE than a random cut, which is why it stays at 0.70."
+   "require_outside_noise_band": true
   },
   "entry_rules": {
    "one_direction_per_underlying": true,
    "dedup_minutes": 30,
-   "dedup_comment": "ENTRY-anchored throttle, same as the live arms' shared dedup_minutes: after a CONFIRMED entry on a symbol+direction, refuse another on that pair for 30 min regardless of whether anything closed. Without it a persistent score >= 0.70 re-enters the same symbol every scan and stacks up to max_concurrent_positions on one underlying (seen live 2026-08-31: IWM put entered 10:00/10:05/10:10). The exit-anchored cooldown below cannot cover this because it only arms after a close.",
-   "already_holding_comment": "There is ALSO an unconditional already-holding guard in risk.py (no config key, matching arm C's _held_symbol_directions): never open a second open lot on a symbol+direction already held; re-enter only after the held lot fully closes. It catches what dedup_minutes cannot -- a lot still open once the 30-min throttle has expired (live IWM 10:37 then again 11:07 on 2026-08-31). Faithful to arm C, which holds at most one open lot per (symbol, direction) at a time.",
    "entry_cooldown_minutes": 15,
    "entry_cooldown_after_exit_reasons": [
     "time_stop"
-   ],
-   "_comment": "Arm C's two entry rules, with the cooldown SCOPED instead of blanket. one_direction_per_underlying removes arm A's flip_opposite_entry exits (its worst bucket, -$139/trade). The cooldown fires only after a time_stop close on that symbol; set entry_cooldown_after_exit_reasons to [] for a BLANKET cooldown (and entry_cooldown_minutes to 30 to reproduce arm C's shipped rule exactly). HONEST STATUS: the scoped variant won on 12 live sessions (+$388/session, p=0.017) and then FAILED the 264-session OPRA harness (negative at slip 0, sign-flips across the calibration ladder, every CI straddles zero). Justified here as risk hygiene, not as a measured edge."
+   ]
   },
   "regime": {
    "require_leader_confirmation": true,
@@ -351,8 +345,7 @@
    "leader_min_above": 5,
    "leader_sma_days": 20,
    "leader_min_symbols": 8,
-   "on_unavailable": "abstain",
-   "_comment": "The 'T6' leader-breadth filter: >=5 of 8 mega-caps above their own 20-DMA as of the last COMPLETED session => bullish, else bearish. Only the OPPOSED side is refused; it never flips a direction or creates a trade. Computed once per session from completed daily bars only. HONEST STATUS: measured +$16.59/position over 264 sessions but raw two-sided p=0.068, family-wise adjusted p=0.405, and it is the largest of nine correlated tests so most of that is selection; the study's minimum detectable effect was $23-34/position. NOT an established edge. leader_min_symbols is 8 ON PURPOSE: min_above=5 was calibrated as 5-of-8, so a partial basket would silently become a stricter, bear-biased rule. Full basket or abstain. on_unavailable=abstain means a data failure blocks trading rather than guessing; set to 'allow' to degrade open instead."
+   "on_unavailable": "abstain"
   },
   "exits": {
    "profit_target_pct": 40,
@@ -360,37 +353,31 @@
    "time_stop_minutes": 30,
    "scale_out_at_target": true,
    "runner_giveback_pct": 40,
-   "_comment": "profit_target is a SCALE-OUT: at +40% it sells HALF the opened qty once and leaves a runner (a 1-lot closes outright). The runner is trailed by giving back runner_giveback_pct (40) of its PEAK GAIN (measured on the gain, not the price) -> reason runner_trail. premium_stop/time_stop/eod sell ALL remaining. Ported from the live arms (intraday_0dte.py: scale_out_qty = ordered//2, runner_trail_floor = high_water*(1-giveback/100)). Set scale_out_at_target=false to revert to a plain full-exit at target. A time_stop exit arms the entry cooldown.",
    "stop_ladder_enabled": true,
    "stop1_loss_pct": -20,
-   "stop2_loss_pct": -40,
-   "stop_ladder_comment": "Downside stop-loss ladder (all hackathon arms, 2026-09-03): sell HALF of remaining at stop1_loss_pct(-20%), the REST at stop2_loss_pct(-40%). premium_stop_pct(-65) is UNREACHABLE while this ladder is on: the stop2 branch tests <= -40 and so also catches -65 and below. It applies only when stop_ladder_enabled is false. Applies in BOTH exit engines via Executor._stop_ladder_exit."
+   "stop2_loss_pct": -40
   },
   "risk": {
    "contracts_per_trade": 300,
    "max_concurrent_positions": 3,
    "max_trades_per_day": 0,
-   "max_trades_per_day_comment": "0 = NO daily entry-count cap. Turnover is bounded by max_alerts_per_run (per-scan) + dedup + the already-holding guard, not a daily count. max_concurrent_positions stays at 3 as a defense-in-depth backstop: it is already structurally guaranteed (3 symbols x one open lot per symbol+direction via the already-holding guard and one_direction_per_underlying), so it never binds in normal operation, but it stops runaway stacking on the 500-lot size if the in-memory book ever drifts. Set >0 to re-arm a hard daily stop.",
    "max_premium_per_trade_usd": 350000,
    "max_open_premium_usd": 95000,
    "entry_limit_slippage_pct": 2.0,
    "flatten_foreign_at_startup": true,
    "no_entry_after": "15:00",
-   "eod_flatten": "15:50",
-   "_comment": "ADAPTIVE sizing: contracts_per_trade (500) is the TARGET; the size is trimmed to fit max_premium_per_trade_usd (350000 = $700 x 500, so the per-trade cap NEVER binds before the account does) AND the remaining max_open_premium_usd room. THE ACCOUNT IS THE SOLE BINDING LIMITER: max_open_premium_usd (95000) is further capped at runtime by min(95000, the account's REAL options buying power), so on a ~$100k paper account the aggregate cap is ~$95k. At 500 lots that cap binds for any contract above ~$1.90 (95000/(1.90*100)=500), so a full 500-lot enters only on CHEAP contracts (e.g. a $0.50 IWM put -> 500 lots = $25k) and a pricier one trims to fit (e.g. a $5.86 contract -> ~162 lots, the SAME as at target 200 because the account, not the target, is binding). Later concurrent entries trim to remaining room. Single-leg LONG only => max loss per trade is the premium paid. Entries use a marketable limit (ask + entry_limit_slippage_pct%) to bound slippage at size. flatten_foreign_at_startup dumps any option position we did not open (orphan guard)."
+   "eod_flatten": "15:50"
   },
   "scan": {
    "first_scan": "09:45",
    "scan_step_minutes": 5,
-   "max_alerts_per_run": 2,
-   "max_alerts_per_run_comment": "Arm C's per-SCAN entry cap (intraday_0dte.py breaks the scan loop once len(fired) >= this). At most this many NEW entries open in a single scan pass, across all symbols; the rest are skipped that pass and reconsidered next scan. 0 disables it. This is a per-run throttle, NOT a per-day total (arm C has no per-day count)."
+   "max_alerts_per_run": 2
   },
   "llm": {
    "provider": "anthropic",
    "model": "claude-sonnet-5",
-   "max_tokens": 1024,
-   "_comment": "Only used when decision_mode = llm. Requires ANTHROPIC_API_KEY. If the key is missing the gate degrades to rules_only and says so in the log."
+   "max_tokens": 1024
   }
  },
- "generated_at": "2026-09-03T23:41:59+00:00"
+ "generated_at": "2026-09-03T23:43:22+00:00"
 }
