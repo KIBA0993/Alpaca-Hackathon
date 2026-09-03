@@ -55,7 +55,7 @@
     "stop_ladder_enabled": true,
     "stop1_loss_pct": -20,
     "stop2_loss_pct": -40,
-    "stop_ladder_comment": "Downside stop-loss ladder (all hackathon arms, 2026-09-03): sell HALF of remaining at stop1_loss_pct(-20%), the REST at stop2_loss_pct(-40%). premium_stop_pct(-65) kept as a deeper backstop (fires only on a gap past -40%). Applies in BOTH exit engines via Executor._stop_ladder_exit."
+    "stop_ladder_comment": "Downside stop-loss ladder (all hackathon arms, 2026-09-03): sell HALF of remaining at stop1_loss_pct(-20%), the REST at stop2_loss_pct(-40%). premium_stop_pct(-65) is UNREACHABLE while this ladder is on: the stop2 branch tests <= -40 and so also catches -65 and below. It applies only when stop_ladder_enabled is false. Applies in BOTH exit engines via Executor._stop_ladder_exit."
   },
   "risk": {
     "contracts_per_trade": 300,

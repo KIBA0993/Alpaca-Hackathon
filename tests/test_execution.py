@@ -2,7 +2,7 @@
 booked P&L uses the real fill prices, and a failed close leaves the position open.
 No network — the broker is a fake that returns canned order results."""
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -436,3 +436,55 @@ def test_stop_ladder_works_in_scale_single_engine_too():
     md.mid = 0.60                                        # -40%: rest
     evs = ex.manage(datetime.now(ET))
     assert len(evs) == 1 and evs[0].reason == "stop_loss_2" and pos.qty == 0
+
+
+# ---------------------------------------------------------------------------
+# Regression: the -20% half-cut must NOT turn the remainder into a runner.
+# Setting pos.scaled routes a position into the runner branch, which trails a
+# high-water mark and never consults _exit_reason. That is right after a +40%
+# profit scale-out and wrong after a loss cut: it left the surviving half with
+# no time stop and no profit target until -40% or the EOD flatten.
+# ---------------------------------------------------------------------------
+def _armA_stop_ex(mid):
+    """Arm A's engine (scale_single, no exit_mode) WITH the -20/-40 stop ladder."""
+    md = _MutMD(mid)
+    cfg = _Cfg("dry_run")
+    cfg.exits = _stop_ladder_exits({"profit_target_pct": 40, "premium_stop_pct": -65,
+                                    "time_stop_minutes": 30, "scale_out_at_target": True,
+                                    "runner_giveback_pct": 40})
+    return md, Executor(md, cfg)
+
+
+def test_loss_cut_does_not_mark_the_remainder_a_runner():
+    md, ex = _armA_stop_ex(1.00)
+    pos = _lpos(qty=50); ex.positions.append(pos)
+    md.mid = 0.78                                        # -22%: sell HALF
+    evs = ex.manage(datetime.now(ET))
+    assert len(evs) == 1 and evs[0].reason == "stop_loss_1"
+    assert pos.qty == 25 and pos.loss_scale_count == 1
+    assert pos.scaled is False, "a loss cut must not claim the remainder is a runner"
+
+
+def test_time_stop_still_fires_on_the_half_left_after_a_loss_cut():
+    md, ex = _armA_stop_ex(1.00)
+    opened = datetime.now(ET) - timedelta(minutes=45)
+    pos = _lpos(qty=50); pos.entry_time = opened; ex.positions.append(pos)
+    md.mid = 0.78                                        # -22%: half goes
+    assert ex.manage(opened + timedelta(minutes=5))[0].reason == "stop_loss_1"
+    assert pos.qty == 25 and pos.open is True
+    # 35 minutes in, still under water but above -40%: the time stop owns it.
+    md.mid = 0.85                                        # -15%
+    evs = ex.manage(opened + timedelta(minutes=35))
+    assert len(evs) == 1 and evs[0].reason == "time_stop", evs
+    assert pos.qty == 0 and pos.open is False
+
+
+def test_profit_target_still_reachable_after_a_loss_cut():
+    """Cut at -20%, then recovers: the surviving half must still scale at +40%."""
+    md, ex = _armA_stop_ex(1.00)
+    pos = _lpos(qty=50); ex.positions.append(pos)
+    md.mid = 0.78
+    assert ex.manage(datetime.now(ET))[0].reason == "stop_loss_1"
+    md.mid = 1.45                                        # +45% on the surviving half
+    evs = ex.manage(datetime.now(ET))
+    assert len(evs) == 1 and evs[0].reason == "profit_target", evs

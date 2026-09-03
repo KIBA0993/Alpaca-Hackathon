@@ -39,14 +39,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # runtime so they never enter an image layer.
 COPY src/ ./src/
 COPY tests/ ./tests/
-COPY config.json ./config.json
-# Arm B/C load config.armB.json / config.armC.json via AGENT_CONFIG; each MUST be
-# in the image (the container mounts only .env + logs, not the config). Harmless
-# in images that never read the other arm's config. Without these, that arm
-# crash-loops on FileNotFoundError.
-COPY config.armB.json ./config.armB.json
-COPY config.armC.json ./config.armC.json
-COPY config.armD.json ./config.armD.json
+# Glob so a clean checkout (which carries only config.json) builds, while a local
+# tree that also holds the sibling arms' configs can still build their images.
+COPY config*.json ./
 COPY smoke_trade.py ./smoke_trade.py
 COPY nas/run_daily.py ./nas/run_daily.py
 

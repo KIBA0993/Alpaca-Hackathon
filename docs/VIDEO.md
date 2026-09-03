@@ -3,14 +3,14 @@
 **Target: 3:00.** Judges watch a lot of these back to back. Lead with the number, then show
 the machine that produced it.
 
-Deck: `assets/deck.pptx` (8 slides) · Cover: `assets/cover.png`
+Deck: `assets/deck.pptx` (9 slides; slide 9 is the required write-up, not narrated) · Cover: `assets/cover.png`
 
 ---
 
 ## Before you record
 
 ```bash
-cd ~/alpaca-hackathon && python3 assets/make_cover.py && node assets/make_deck.js
+cd ~/alpaca-hackathon && python3 assets/make_cover.py && node assets/make_deck.js && python3 assets/make_onepager.py
 ```
 
 Both pull equity, per-session P&L and the fill counts straight from the account, so this
@@ -21,7 +21,7 @@ Set up three windows to cut between:
 
 | # | Window | What's on it |
 |---|---|---|
-| A | Deck, presenter mode, full screen | the 8 slides |
+| A | Deck, presenter mode, full screen | slides 1-8 (9 is the write-up) |
 | B | Terminal, 18pt+, dark theme | the demo commands below |
 | C | Browser on the Alpaca paper dashboard | account `PA38HG4D9653` — equity + history |
 
@@ -36,7 +36,7 @@ C before you hit record** — `alpaca doctor` prints a key prefix, so crop it or
 alpaca doctor                                    # the PAPER endpoint the agent verifies before every order
 python -m src.agent --once                       # one live scan: score -> gate -> risk, dry-run, no orders
 tail -n 1 logs/decisions-$(date +%F).jsonl | python3 -m json.tool   # the full reasoning for one decision
-pytest -q                                        # 175 passed
+pytest -q                                        # 174 passed
 ```
 
 The money shot is the **third** one. Find a record where `"go": false` and put that on
@@ -90,7 +90,7 @@ Read it conversationally. Bracketed lines are stage directions.
 > account's real options buying power, so an expensive contract sizes *down* instead of
 > getting rejected. No entries after three PM, and a hard flatten at three-fifty.
 >
-> A hundred and seventy-five tests cover all of it.
+> A hundred and seventy-four tests cover all of it.
 
 ### 1:30 — 1:50 · AI logic  *[Slide 5]*
 

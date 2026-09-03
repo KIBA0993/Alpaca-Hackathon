@@ -30,12 +30,12 @@ The decision gate is the only place the two flavours differ. Flip one flag in
 
 | `decision_mode` | what it is | gate |
 |---|---|---|
-| `rules_only` | the rule stack (live "arm C" entry rules + half-OR band + leader regime) | score ≥ 0.70 **and** price outside its own half-OR noise band **and** direction agrees with the leader-breadth regime **and** one direction per underlying per session **and** no re-entry within 15 min of a `time_stop` exit on that symbol |
+| `rules_only` | the deterministic rule stack (score + half-OR band + leader regime) | score ≥ 0.70 **and** price outside its own half-OR noise band **and** direction agrees with the leader-breadth regime **and** one direction per underlying per session **and** no re-entry within 15 min of a `time_stop` exit on that symbol |
 | `llm` | the core **plus** an AI bull/bear debate + regime read | rules gate, then an LLM **veto** |
 
 The LLM can only turn a *go* into a *no-go* — it can never create a trade the
-rules rejected. So `rules_only` is a strict floor under `llm`, and you can run
-both side by side and compare them honestly. That live A/B **is** the demo.
+rules rejected. So `rules_only` is a strict subset of `llm`: the two can be run side by side
+and compared against each other.
 
 ## How it works
 
@@ -49,15 +49,20 @@ every scan:  manage open positions (exit first)
                               ─▶ EXECUTE (dry_run logs, or paper buys ATM long
                                           via the Alpaca CLI, polling for the fill)
              exits: +40% target (scale out half, trail the runner) /
-                    −65% premium stop / 30-min time stop / EOD flatten
+                    −20% sell half, −40% the rest / 30-min time stop /
+                    15:50 EOD flatten
 ```
 
 **Sizing is adaptive and exits scale out.** The agent targets `contracts_per_trade`
 but trims the size to fit both the per-trade premium budget and the remaining
 buying-power room (capped by the account's real options BP), so an expensive
 contract sizes *down* instead of rejecting. At the +40% target it sells **half**
-and trails the **runner** by giving back 40% of its peak gain (`runner_trail`);
-premium-stop / time-stop / EOD sell all remaining. Partial fills are handled on
+and trails the **runner** by giving back 40% of its peak gain (`runner_trail`).
+On the downside a stop ladder sells **half at −20%** and the **rest at −40%**; the
+half-cut deliberately does not mark the remainder a runner, so it keeps its time
+stop and profit target. Time-stop / EOD sell all remaining. (`premium_stop_pct`
+is only reachable with `stop_ladder_enabled: false` — the −40% rung catches
+anything deeper first.) Partial fills are handled on
 both sides, entries use a marketable limit, and any un-tracked broker option
 position is flattened at startup and end-of-day. Set `contracts_per_trade: 1` and
 `scale_out_at_target: false` for the simple 1-lot full-exit path.
@@ -121,7 +126,7 @@ option?" check — preflight-only until you pass `--live --yes`, and it refuses 
 place anything while the market is closed.
 
 ```bash
-pytest -q                     # 175 network-free tests: scorer, gate, risk, CLI execution, sizing + runner
+pytest -q                     # 174 network-free tests: scorer, gate, risk, CLI execution, sizing + runner
 ```
 
 ## Honesty notes (read these)

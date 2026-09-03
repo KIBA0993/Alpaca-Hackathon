@@ -42,7 +42,7 @@ rather than by code that has to remember.** On top of that, `src/risk.py` and
 
 Exits ladder in both directions: **+40% sells half** and trails the runner by 40% of its peak
 gain; **−20% sells half, −40% the rest**; a 30-minute stop closes anything still under water;
-15:50 flattens the book. **175 network-free tests** cover the scorer, the gates, the sizing
+15:50 flattens the book. **174 network-free tests** cover the scorer, the gates, the sizing
 maths and the execution path.
 
 ## 3 · Alpaca infrastructure

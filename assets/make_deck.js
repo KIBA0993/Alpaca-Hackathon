@@ -295,7 +295,7 @@ async function main() {
   s.addText("Exits ladder in both directions:  +40% scales out half and trails the runner by 40% of its peak gain  ·  -20% sells half, -40% the rest  ·  a 30-minute stop closes anything still under water  ·  15:50 flatten.",
     { x: 0.6, y: 6.42, w: 12.13, h: 0.4, isTextBox: true, margin: 0,
       fontFace: SANS, fontSize: 11, color: INK2 });
-  s.addNotes("175 network-free tests cover the scorer, these gates, the sizing maths and the execution path.");
+  s.addNotes("174 network-free tests cover the scorer, these gates, the sizing maths and the execution path.");
 
   // ---- 5 AI logic ----------------------------------------------------------
   s = pres.addSlide();
@@ -432,7 +432,7 @@ async function main() {
     "No entry after 15:00 ET; hard flatten at 15:50, so a 0DTE never reaches expiry.",
     "Orphan sweep at startup and EOD for positions the agent did not open.",
     "Exits: +40% sells half and trails the runner; -20% half, -40% the rest; 30-min stop if under water.",
-    "175 network-free tests cover all of it.",
+    "174 network-free tests cover all of it.",
   ]);
   bullets(s, 0.6 + (colW + colGap) * 2, colY, colW, colH, "3 · Alpaca infrastructure", [
     "Every order through the Alpaca CLI, not the SDK: `alpaca order submit`, then poll to a terminal state.",

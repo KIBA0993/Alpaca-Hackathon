@@ -14,3 +14,9 @@ config.json.bak*
 
 # LibreOffice lock files (from PDF rendering during QA)
 .~lock.*#
+
+# Sibling experiment arms (B/C/D) — not part of this submission. Kept on disk so
+# `ARM=B nas/deploy-to-nas.sh` still works locally; simply not published.
+config.arm*.json
+nas/docker-compose.arm*.yml
+tests/test_config_arms.py

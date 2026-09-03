@@ -282,8 +282,12 @@ class Executor:
                           now: datetime) -> Optional[ExitEvent]:
         """Downside stop-loss ladder shared by BOTH exit engines: sell HALF of
         what remains at stop1_loss_pct (default -20%), then the REST at
-        stop2_loss_pct (default -40%). The -65% premium_stop stays as a deeper
-        backstop in each engine (it fires only on a gap straight past -40%).
+        stop2_loss_pct (default -40%). NOTE the stop2 branch tests `<= s2`, so it
+        also catches anything below -40%: while the ladder is enabled the -65%
+        premium_stop in each engine is unreachable, and only applies when
+        stop_ladder_enabled is false. The half-cut deliberately does NOT mark the
+        remainder as a runner (see _sell's mark_runner), so the surviving half
+        keeps its time stop and profit target.
         Returns an ExitEvent (mutating loss_scale_count) or None. Disabled unless
         exits.stop_ladder_enabled is true."""
         if not bool(self.exits_cfg.get("stop_ladder_enabled", False)):
@@ -294,7 +298,8 @@ class Executor:
             return self._sell(pos, q, pos.qty, "stop_loss_2", is_scale=False, now=now)
         if pos.loss_scale_count == 0 and pnl_pct <= s1 + 1e-9:  # first cut: half of remaining
             half = max(int(pos.qty) // 2, 1)
-            ev = self._sell(pos, q, half, "stop_loss_1", is_scale=True, now=now)
+            ev = self._sell(pos, q, half, "stop_loss_1", is_scale=True, now=now,
+                            mark_runner=False)
             if ev is not None:
                 pos.loss_scale_count = 1
             return ev
@@ -427,10 +432,19 @@ class Executor:
         return self._sell(pos, q, pos.qty, reason, is_scale=False, now=now)
 
     def _sell(self, pos: Position, q: dict, want_qty: int, reason: str,
-              is_scale: bool, now: Optional[datetime] = None) -> Optional[ExitEvent]:
+              is_scale: bool, now: Optional[datetime] = None,
+              mark_runner: bool = True) -> Optional[ExitEvent]:
         """Sell up to `want_qty` contracts. Decrements remaining; only a fully
         closed position (qty == 0) is marked closed and arms the cooldown. A
-        scale-out leaves the runner open and never arms the cooldown."""
+        scale-out leaves the runner open and never arms the cooldown.
+
+        `mark_runner` exists for the LOSS side. Setting pos.scaled routes the
+        remainder into the runner branch, which trails a high-water mark and
+        skips _exit_reason entirely — correct after a +40% profit scale-out,
+        wrong after a -20% loss cut, because it would leave the surviving half
+        with no time stop and no profit target until -40% or the EOD flatten.
+        The loss ladder therefore scales without claiming the position is a
+        runner; pos.loss_scale_count is what stops it re-firing."""
         want = min(int(want_qty), pos.qty)
         if want <= 0:
             return None
@@ -456,7 +470,7 @@ class Executor:
         # Keep cost_usd = the remaining held cost, so open_premium_usd() (and thus
         # the aggregate BP guard) reflects only what is still held after a leg sells.
         pos.cost_usd = round(pos.entry_basis * 100 * max(pos.qty, 0), 2)
-        if is_scale:
+        if is_scale and mark_runner:
             pos.scaled = True                       # a leg went; remainder is the runner
         fully_closed = pos.qty <= 0
         if fully_closed:
