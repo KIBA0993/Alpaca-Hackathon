@@ -11,3 +11,6 @@ logs/
 # local working notes + config backups (not part of the public submission)
 docs/SUBMISSION.md
 config.json.bak*
+
+# LibreOffice lock files (from PDF rendering during QA)
+.~lock.*#
