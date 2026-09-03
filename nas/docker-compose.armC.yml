@@ -1,0 +1,38 @@
+# Arm C — 0DTE PAPER agent, arm B minus the half-OR band on the FADE path.
+# Synology DS920+, Container Manager (Docker 20.10.3), compose v1 — NO `version:`.
+#
+# A fully isolated SIBLING of arms A and B: its own NAS dir
+# (/volume1/docker/alpaca-hackathon-armC), own image + container name, own
+# .env.armC (a THIRD, DIFFERENT paper account), own logs. Same codebase — the
+# only behavioural difference from arm B is AGENT_CONFIG=config.armC.json, which
+# sets require_outside_noise_band_fade=false (drops the band on fades only).
+# It cannot read or write arm A, arm B, or the trading tree.
+#
+#   cd /volume1/docker/alpaca-hackathon-armC/nas
+#   sudo /usr/local/bin/docker-compose -f docker-compose.armC.yml up -d --build
+services:
+  agent:
+    build:
+      context: ..
+      dockerfile: nas/Dockerfile
+    # Docker image tags MUST be lowercase (repository names reject uppercase).
+    # container_name keeps the -armC casing, which container names allow, and
+    # matches NAME in deploy-to-nas.sh (used by the post-start `docker exec` check).
+    image: alpaca-hackathon-armc:latest
+    container_name: alpaca-hackathon-armC
+    restart: unless-stopped
+    # Arm C's OWN paper account. .env.armC holds ALPACA_API_KEY /
+    # ALPACA_SECRET_KEY / ALPACA_PAPER=true and NO ALPACA_LIVE_TRADE.
+    env_file:
+      - ../.env.armC
+    environment:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+      # Selects the band-ablation config; run_daily.py appends --config for this.
+      AGENT_CONFIG: config.armC.json
+    volumes:
+      - ../logs:/app/logs
+      - ../.env.armC:/app/.env:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8

@@ -1,0 +1,35 @@
+# 0DTE PAPER agent — Synology DS920+, Container Manager (Docker 20.10.3).
+# compose v1 (1.28.5) at /usr/local/bin/docker-compose — NO `version:` key
+# (the v1 binary follows the Compose Specification, like the trading stack).
+#
+# ISOLATED from the trading deployment: own dir, own image + container name, no
+# shared volumes, no exposed ports. It cannot read or write the trading tree.
+# Deploy path on NAS: /volume1/docker/alpaca-hackathon
+#
+#   cd /volume1/docker/alpaca-hackathon/nas
+#   sudo /usr/local/bin/docker-compose up -d --build
+services:
+  agent:
+    build:
+      context: ..
+      dockerfile: nas/Dockerfile
+    image: alpaca-hackathon:latest
+    container_name: alpaca-hackathon
+    restart: unless-stopped
+    # Keys injected at runtime (never baked). .env holds ALPACA_API_KEY /
+    # ALPACA_SECRET_KEY / ALPACA_PAPER=true and NO ALPACA_LIVE_TRADE — the
+    # broker refuses to place an order unless `alpaca doctor` resolves paper.
+    env_file:
+      - ../.env
+    environment:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      # Decision JSONL, tailable straight from the NAS filesystem.
+      - ../logs:/app/logs
+      # So src/config.py's dotenv loader also finds the keys (belt + suspenders
+      # with env_file above). Read-only.
+      - ../.env:/app/.env:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8

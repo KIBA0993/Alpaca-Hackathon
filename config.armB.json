@@ -1,0 +1,100 @@
+{
+  "arm": "B",
+  "arm_comment": "Arm B = a SIBLING experiment to arm A (config.json), run on its OWN paper account and its OWN container, same codebase. As of 2026-09-01 it differs from arm A in TWO places: (1) the ENTRY side is the '#2' gamma-regime strategy — dealer-gamma picks the mode per symbol (net 0DTE gamma > 0 => CHOP => fade the OR edges; < 0 => TREND => chase breakouts), REPLACING the T6 leader-breadth veto (regime.require_leader_confirmation is now false and the gamma block is enabled); (2) the EXIT engine is the two-tier scale-out ladder + 1-min manage cadence. Because BOTH entry and exit now differ from arm A, this is NO LONGER a clean exit A/B — it is a combined test of the gamma entry AND the ladder. NOT a measured edge on either axis: the gamma entry CANNOT be backtested (no historical OI; see research gamma-positioning-is-the-one-untested-class) and is deployed straight to paper to BUILD the forward record; the ladder is a variance trade. Every prior price-based way to make direction flexible was measured dead (q80 intraday efficiency ~0; q81 live breadth = a coin flip) — gamma is the one non-price input left, and this arm exists to record whether it pays.",
+  "mode": "dry_run",
+  "mode_comment": "dry_run = log intended orders only. paper = place real orders on arm B's PAPER account. The NAS supervisor runs --mode paper; keep this dry_run so a bare local run never trades.",
+  "decision_mode": "rules_only",
+  "symbols": [
+    "SPY",
+    "QQQ",
+    "IWM"
+  ],
+  "score": {
+    "min_score": 0.7,
+    "or_minutes": 15,
+    "min_relative_volume": 0.92,
+    "noise_band_scale": "half_or",
+    "require_outside_noise_band": true,
+    "_comment": "IDENTICAL to arm A. Do not diverge the entry side — arm B isolates the EXIT change only."
+  },
+  "entry_rules": {
+    "one_direction_per_underlying": true,
+    "dedup_minutes": 30,
+    "entry_cooldown_minutes": 15,
+    "entry_cooldown_after_exit_reasons": [
+      "time_stop",
+      "premium_stop"
+    ],
+    "_comment": "Arm B DIFFERS from arm A here: the 15-min entry cooldown arms after a time_stop OR a premium_stop (stop-loss) exit, not time_stop alone. So after a stop-out, arm B waits 15 min before it will re-enter that symbol (the already-holding guard and 30-min entry dedup still apply too). arm A stays time_stop-only."
+  },
+  "regime": {
+    "require_leader_confirmation": false,
+    "leader_symbols": [
+      "NVDA",
+      "MSFT",
+      "AAPL",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "TSLA",
+      "AVGO"
+    ],
+    "leader_min_above": 5,
+    "leader_sma_days": 20,
+    "leader_min_symbols": 8,
+    "on_unavailable": "abstain",
+    "_comment": "T6 leader-breadth veto is OFF for arm B (require_leader_confirmation=false) — the gamma block below replaces it as the direction/mode selector. The leader_* keys are kept only so nothing downstream breaks if the flag is flipped back."
+  },
+  "gamma": {
+    "enabled": true,
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "IWM"
+    ],
+    "on_unavailable": "abstain",
+    "invert_sign": false,
+    "_comment": "The '#2' entry. Once per session (cached, like T6 was) the agent pulls Cboe's FREE delayed 0DTE chain per symbol, re-derives dealer gamma from Black-Scholes (NOT Cboe's quantized gamma field), and sets the MODE: net 0DTE gamma > 0 => 'chop' => FADE the OR edges (buy calls at the OR low, puts at the OR high); < 0 => 'trend' => CHASE breakouts (the shipped momentum scorer). Direction is NOT frozen — both calls and puts are eligible every day; which fires depends on price position and mode. on_unavailable=abstain means a Cboe outage or a thin 0DTE chain => that symbol takes NO entry (fail-safe), never a blind guess. invert_sign flips the dealer short-call/long-put ASSUMPTION if the forward recording says the sign is backwards. UNVALIDATED — deployed to record, not because it is known to work."
+  },
+  "exits": {
+    "exit_mode": "ladder",
+    "tier1_target_pct": 20,
+    "tier1_trail_price_drop_pct": 10,
+    "tier2_target_pct": 40,
+    "runner_giveback_pct": 40,
+    "premium_stop_pct": -65,
+    "time_stop_minutes": 30,
+    "_comment": "ARM B's two-tier ladder (exit_mode=ladder selects it in execution.py; arm A leaves exit_mode unset = 'scale_single'). Tier 1: at +tier1_target_pct (20%) sell HALF the opened qty. Runner then trails on PRICE: sell it all if the mid falls tier1_trail_price_drop_pct (10%) below its peak mid. Tier 2: if it instead reaches +tier2_target_pct (40%), sell HALF of what remains, and the leftover rides the SAME peak-GAIN giveback trail arm A uses (runner_giveback_pct 40). premium_stop/time_stop/eod as in arm A; time_stop only before tier 1 (after +20% the position is in profit). HONEST STATUS: not a measured edge — the option-price-vs-peak trail is the noisiest corner of the exit space (see research: early-banking loses in 19/20 cells, gains evaporate at execution lag) and 1-min sampling samples that noise more finely. Live A/B is the point.",
+    "stop_ladder_enabled": true,
+    "stop1_loss_pct": -20,
+    "stop2_loss_pct": -40,
+    "stop_ladder_comment": "Downside stop-loss ladder (all hackathon arms, 2026-09-03): sell HALF of remaining at stop1_loss_pct(-20%), the REST at stop2_loss_pct(-40%). premium_stop_pct(-65) kept as a deeper backstop (fires only on a gap past -40%). Applies in BOTH exit engines via Executor._stop_ladder_exit."
+  },
+  "risk": {
+    "contracts_per_trade": 300,
+    "max_concurrent_positions": 3,
+    "max_trades_per_day": 0,
+    "max_premium_per_trade_usd": 350000,
+    "max_open_premium_usd": 95000,
+    "_sizing_comment": "Arm B TARGET is 500 lots (all three arms are 500 now). Sizing is adaptive: Executor.size_for trims 500 to fit the per-trade cap (350000 = $700/contract x 500, set high enough that it NEVER binds before the account), the aggregate cap (95000), AND the account's REAL options buying power (max_open_premium = min(95000, options_buying_power)). So the ACCOUNT is the sole binding limiter: on a ~$100k account the ~$95k cap binds for any contract above ~$1.90, so a full 500-lot enters only on CHEAP contracts (e.g. a $0.50 IWM put -> 500 lots = $25k) and a pricier one trims to fit (e.g. a $5.86 contract -> ~162 lots, the same as at target 200). Later concurrent entries trim to remaining room. Single-leg LONG only, so max loss per trade is the premium paid.",
+    "entry_limit_slippage_pct": 2.0,
+    "flatten_foreign_at_startup": true,
+    "no_entry_after": "15:00",
+    "eod_flatten": "15:50",
+    "_comment": "IDENTICAL to arm A sizing/risk. Arm B has its OWN paper account, so its buying power and positions are fully separate from arm A."
+  },
+  "scan": {
+    "first_scan": "09:45",
+    "scan_step_minutes": 1,
+    "manage_step_minutes": 1,
+    "max_alerts_per_run": 2,
+    "cadence_comment": "manage_step_minutes=1 is arm B's defining second change: exits are checked EVERY MINUTE (Alpaca option quotes only, no yfinance), while entries stay on scan_step_minutes=5 (yfinance). manage_step is clamped to [1, scan_step]. Arm A omits manage_step_minutes, so it defaults to scan_step and manages+scans together every 5 min exactly as before. Keeping the entry cadence at 5 min means arm B adds NO extra yfinance load on the shared NAS IP.",
+    "scan_step_1min_comment": "Set to 1 on 2026-09-03 (entry scan every minute, matching arm D). NOTE: this makes C identical to D."
+  },
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-5",
+    "max_tokens": 1024,
+    "_comment": "Only used when decision_mode = llm."
+  }
+}

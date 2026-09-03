@@ -1,0 +1,101 @@
+{
+  "arm": "C",
+  "arm_comment": "Arm C = the half-OR BAND ABLATION of arm B. It is a byte-for-byte copy of arm B (same gamma-regime entry: dealer-gamma picks CHOP=>fade / TREND=>chase; same two-tier ladder exit; same 1-min manage cadence; same 100-lot sizing; T6 OFF) EXCEPT for ONE key: score.require_outside_noise_band_fade=false. That drops the half-OR noise band ON THE FADE PATH ONLY (chop days); the momentum/trend path keeps the band (require_outside_noise_band stays true). So a clean live B-vs-C isolates EXACTLY the band's effect on fades. WHY: q83 (2026-09-01) refetched all 417 fade contracts from Alpaca and priced them — the fades the band blocks lose UNCONDITIONALLY (band-blocked -$15,780/97 pos/-$163 each, 95% CI excludes 0), so the backtest says the band EARNS its keep and dropping it should make the fade book WORSE. BUT that test is unconditional over 264 sessions; live fades fire only on gamma-chop days, which we cannot reconstruct (no OI history). Arm C exists to settle that on the days that actually matter: if C underperforms B on the fade positions, the band is confirmed live; if C matches or beats B, the chop-day conditioning saves the trades the unconditional test condemned. Own paper account, own container, fully isolated. UNVALIDATED by construction — it is a live A/B, not a shipped edge.",
+  "mode": "dry_run",
+  "mode_comment": "dry_run = log intended orders only. paper = place real orders on arm C's PAPER account. The NAS supervisor runs --mode paper; keep this dry_run so a bare local run never trades.",
+  "decision_mode": "rules_only",
+  "symbols": [
+    "SPY",
+    "QQQ",
+    "IWM"
+  ],
+  "score": {
+    "min_score": 0.7,
+    "or_minutes": 15,
+    "min_relative_volume": 0.92,
+    "noise_band_scale": "half_or",
+    "require_outside_noise_band": true,
+    "require_outside_noise_band_fade": false,
+    "_comment": "THE ONE DIFFERENCE FROM ARM B. require_outside_noise_band=true keeps the half-OR band on the MOMENTUM (trend-day) path, identical to arm A/B. require_outside_noise_band_fade=false removes the band on the FADE (chop-day) path — arm C will take fade entries that arm B rejects for sitting 'inside' the band. The gate reads scored.entry_mode: 'fade' honours the _fade key, 'momentum' honours the base key. Everything else in this config is identical to config.armB.json so B-vs-C measures the fade band and nothing else."
+  },
+  "entry_rules": {
+    "one_direction_per_underlying": true,
+    "dedup_minutes": 30,
+    "entry_cooldown_minutes": 15,
+    "entry_cooldown_after_exit_reasons": [
+      "time_stop",
+      "premium_stop"
+    ],
+    "_comment": "IDENTICAL to arm B: 15-min entry cooldown after a time_stop OR a premium_stop exit. Kept the same so it is NOT a confound for the band ablation."
+  },
+  "regime": {
+    "require_leader_confirmation": false,
+    "leader_symbols": [
+      "NVDA",
+      "MSFT",
+      "AAPL",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "TSLA",
+      "AVGO"
+    ],
+    "leader_min_above": 5,
+    "leader_sma_days": 20,
+    "leader_min_symbols": 8,
+    "on_unavailable": "abstain",
+    "_comment": "IDENTICAL to arm B. T6 leader-breadth veto OFF; the gamma block below is the mode selector."
+  },
+  "gamma": {
+    "enabled": true,
+    "symbols": [
+      "SPY",
+      "QQQ",
+      "IWM"
+    ],
+    "on_unavailable": "abstain",
+    "invert_sign": false,
+    "_comment": "IDENTICAL to arm B. Once per session the agent pulls Cboe's FREE delayed 0DTE chain per symbol, re-derives dealer gamma from Black-Scholes, and sets the MODE: net 0DTE gamma > 0 => 'chop' => FADE the OR edges; < 0 => 'trend' => CHASE breakouts. on_unavailable=abstain => a Cboe outage or thin chain takes NO entry (fail-safe). Kept identical so the gamma regime selection is the SAME on B and C — only the fade band differs."
+  },
+  "exits": {
+    "exit_mode": "ladder",
+    "tier1_target_pct": 20,
+    "tier1_trail_price_drop_pct": 10,
+    "tier2_target_pct": 40,
+    "runner_giveback_pct": 40,
+    "premium_stop_pct": -65,
+    "time_stop_minutes": 30,
+    "_comment": "IDENTICAL to arm B's two-tier ladder. Tier 1: at +20% sell HALF; runner trails on PRICE (sell all if mid falls 10% below peak mid). Tier 2: at +40% sell HALF of the remainder; leftover rides the 40% peak-gain giveback trail. premium_stop -65, time_stop 30 (only before tier 1), eod flatten. Kept identical so the exit engine is NOT a confound for the band ablation.",
+    "stop_ladder_enabled": true,
+    "stop1_loss_pct": -20,
+    "stop2_loss_pct": -40,
+    "stop_ladder_comment": "Downside stop-loss ladder (all hackathon arms, 2026-09-03): sell HALF of remaining at stop1_loss_pct(-20%), the REST at stop2_loss_pct(-40%). premium_stop_pct(-65) kept as a deeper backstop (fires only on a gap past -40%). Applies in BOTH exit engines via Executor._stop_ladder_exit."
+  },
+  "risk": {
+    "contracts_per_trade": 300,
+    "max_concurrent_positions": 3,
+    "max_trades_per_day": 0,
+    "max_premium_per_trade_usd": 350000,
+    "max_open_premium_usd": 95000,
+    "_sizing_comment": "IDENTICAL to arm B. Target 500 lots, trimmed by the per-trade cap (350000 = $700 x 500, set so it never binds before the account), the aggregate cap (95000), and the account's REAL options buying power (max_open_premium = min(95000, options_buying_power)). So the ACCOUNT is the sole binding limiter: a 500-lot enters whole only on cheap contracts (<= ~$1.90) and trims on pricier ones (e.g. $5.86 -> ~162 lots). Arm C has its OWN paper account, so its buying power/positions are fully separate from A and B.",
+    "entry_limit_slippage_pct": 2.0,
+    "flatten_foreign_at_startup": true,
+    "no_entry_after": "15:00",
+    "eod_flatten": "15:50",
+    "_comment": "IDENTICAL to arm B."
+  },
+  "scan": {
+    "first_scan": "09:45",
+    "scan_step_minutes": 1,
+    "manage_step_minutes": 1,
+    "max_alerts_per_run": 2,
+    "cadence_comment": "IDENTICAL to arm B: entries scan every 5 min (yfinance), exits manage every 1 min (Alpaca quotes only). No extra yfinance load on the shared NAS IP beyond arm B's.",
+    "scan_step_1min_comment": "Set to 1 on 2026-09-03 (entry scan every minute, matching arm D). NOTE: this makes C identical to D."
+  },
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-5",
+    "max_tokens": 1024,
+    "_comment": "Only used when decision_mode = llm."
+  }
+}

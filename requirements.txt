@@ -1,0 +1,13 @@
+# Alpaca AI Trading Agents Hackathon — defined-risk 0DTE agent
+# Python 3.11+
+#
+# PINNED to the versions the 117-test suite is validated against (the Mac dev
+# env), so the NAS container runs byte-for-byte what was tested. pandas 2 -> 3
+# has behavioral changes a successful import would not reveal, so we do not let
+# `>=` drift the deployed image away from the tested stack.
+alpaca-py==0.43.5      # options (contracts + quotes), leader daily bars, paper trading
+yfinance==1.4.1        # real-time underlying 5m bars (free-plan Alpaca SIP is 15-min delayed)
+pandas==2.3.3          # bar math (VWAP, RSI, EMA, baselines)
+numpy==1.26.4          # the numpy ABI pandas 2.3.3 was tested against
+anthropic==0.107.0     # optional LLM decision gate (decision_mode = llm; unused in rules_only)
+pytest==9.0.3          # tests (run at image build time as a deploy gate)

@@ -1,0 +1,38 @@
+# Arm D — 0DTE PAPER agent, arm C with a 1-minute entry scan (arm C scans every 5).
+# Synology DS920+, Container Manager (Docker 20.10.3), compose v1 — NO `version:`.
+#
+# A fully isolated SIBLING of arms A, B and C: its own NAS dir
+# (/volume1/docker/alpaca-hackathon-armD), own image + container name, own
+# .env.armD (a FOURTH, DIFFERENT paper account), own logs. Same codebase — the
+# only behavioural difference from arm C is AGENT_CONFIG=config.armD.json, which
+# sets scan.scan_step_minutes=1 (evaluate the fade edge-touch every minute).
+# It cannot read or write arm A, B, C, or the trading tree.
+#
+#   cd /volume1/docker/alpaca-hackathon-armD/nas
+#   sudo /usr/local/bin/docker-compose -f docker-compose.armD.yml up -d --build
+services:
+  agent:
+    build:
+      context: ..
+      dockerfile: nas/Dockerfile
+    # Docker image tags MUST be lowercase (repository names reject uppercase).
+    # container_name keeps the -armD casing, which container names allow, and
+    # matches NAME in deploy-to-nas.sh (used by the post-start `docker exec` check).
+    image: alpaca-hackathon-armd:latest
+    container_name: alpaca-hackathon-armD
+    restart: unless-stopped
+    # Arm D's OWN paper account. .env.armD holds ALPACA_API_KEY /
+    # ALPACA_SECRET_KEY / ALPACA_PAPER=true and NO ALPACA_LIVE_TRADE.
+    env_file:
+      - ../.env.armD
+    environment:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+      # Selects the 1-min-cadence config; run_daily.py appends --config for this.
+      AGENT_CONFIG: config.armD.json
+    volumes:
+      - ../logs:/app/logs
+      - ../.env.armD:/app/.env:ro
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
