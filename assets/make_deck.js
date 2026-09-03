@@ -142,6 +142,19 @@ function card(slide, o) {
   }
 }
 
+/** A dense bullet column, used by the write-up slide. */
+function bullets(slide, x, y, w, h, heading, items) {
+  slide.addShape("roundRect", { x, y, w, h, fill: { color: CARD },
+    line: { color: LINE, width: 1 }, rectRadius: 0.08 });
+  slide.addText(heading, { x: x + 0.28, y: y + 0.2, w: w - 0.56, h: 0.3, isTextBox: true,
+    margin: 0, fontFace: SANS, fontSize: 15, bold: true, color: GOLD });
+  slide.addText(items.map((s, i) => ({
+    text: s, options: { bullet: true, breakLine: i < items.length - 1 } })),
+    { x: x + 0.28, y: y + 0.62, w: w - 0.56, h: h - 0.82, isTextBox: true, margin: 0,
+      fontFace: SANS, fontSize: 9.5, color: INK2, lineSpacingMultiple: 1.14,
+      paraSpaceAfter: 4, valign: "top" });
+}
+
 /** A row of connected process boxes. */
 function flow(slide, steps, y, h, accentIdx) {
   const gap = 0.22, bw = (12.13 - gap * (steps.length - 1)) / steps.length;
@@ -384,6 +397,54 @@ async function main() {
     { x: 0.6, y: 6.85, w: 8.5, h: 0.3, isTextBox: true, margin: 0,
       fontFace: MONO, fontSize: 9, color: MUTED });
   s.addNotes("Close on the four claims. Each one is checkable in the repo.");
+
+
+  // ---- 9 the required one-page write-up ------------------------------------
+  // The hackathon accepts this as a slide, a section of the description, or a
+  // repo page. It ships as all three; this is the slide form.
+  s = pres.addSlide();
+  shell(s, "Required one-page write-up");
+  title(s, "AI logic  ·  Risk gates  ·  Alpaca infrastructure");
+  s.addShape("roundRect", { x: 0.6, y: 1.82, w: 12.13, h: 0.6, fill: { color: CARD },
+    line: { color: GOLD, width: 1 }, rectRadius: 0.08 });
+  s.addText([
+    { text: `Alpaca paper ${ACCT}  ·  single-leg long 0DTE on SPY / QQQ / IWM  ·  `,
+      options: { color: INK2 } },
+    { text: `$100,000 → ${usd(bk.equity)} (${signed(bk.pct)}) across ${bk.sessions.length} sessions, `
+        + `${bk.entries} entries / ${bk.exits} exits`, options: { color: INK, bold: true } },
+  ], { x: 0.9, y: 1.82, w: 11.5, h: 0.6, isTextBox: true, margin: 0, valign: "middle",
+       fontFace: SANS, fontSize: 12 });
+
+  const colW = 3.87, colGap = 0.26, colY = 2.62, colH = 4.05;
+  bullets(s, 0.6, colY, colW, colH, "1 · AI logic", [
+    "Scorer reduces Alpaca 5m bars to one number: VWAP position, opening-range break, RSI, EMA stack, relative volume - plus a proposed direction.",
+    "Half-opening-range noise band: is the break larger than the symbol's own morning noise?",
+    "Leader breadth: 5 of 8 mega-caps above their 20-day average as of the last completed session. Only ever removes the opposed side.",
+    "A Claude layer argues bull and bear over the scored facts and returns strict JSON - and can only turn a go into a no-go.",
+    "It can never resurrect a rejected trade, so the deterministic path is a strict subset of the AI path.",
+    "A missing key or unparseable reply degrades to the deterministic gate and says so in the journal.",
+  ]);
+  bullets(s, 0.6 + colW + colGap, colY, colW, colH, "2 · Risk gates", [
+    "Single-leg long only: max loss is the premium paid, set by the instrument.",
+    "One open lot per (symbol, direction); one direction per underlying.",
+    "30-minute entry-anchored dedup, so a persistent score cannot stack the same name.",
+    "Sizing trimmed to the account's real options buying power - expensive contracts size down, never reject.",
+    "No entry after 15:00 ET; hard flatten at 15:50, so a 0DTE never reaches expiry.",
+    "Orphan sweep at startup and EOD for positions the agent did not open.",
+    "Exits: +40% sells half and trails the runner; -20% half, -40% the rest; 30-min stop if under water.",
+    "175 network-free tests cover all of it.",
+  ]);
+  bullets(s, 0.6 + (colW + colGap) * 2, colY, colW, colH, "3 · Alpaca infrastructure", [
+    "Every order through the Alpaca CLI, not the SDK: `alpaca order submit`, then poll to a terminal state.",
+    "So the agent books the real broker fill, not a quote - cash P&L is buy-fill against sell-fill.",
+    "Refuses to place anything unless `alpaca doctor` resolves paper-api.alpaca.markets.",
+    "An ambiguous submit is reconciled by --client-order-id before it will ever resubmit.",
+    "Market data - bars, contract discovery, ATM quotes - via the Alpaca Market Data API.",
+    "Runs unattended in an isolated Docker container, one session per weekday.",
+    "Every scan appends one JSONL record with the full reasoning to logs/.",
+  ]);
+  s.addNotes("This slide is the hackathon's required one-page write-up. The same content ships "
+    + "as docs/ONE_PAGER.md and docs/ONE_PAGER.pdf in the repo.");
 
   await pres.writeFile({ fileName: OUT });
   console.log(`wrote ${OUT}  —  ${usd(bk.equity)} (${signed(bk.pct)}), `

@@ -1,11 +1,15 @@
-# Defined-Risk 0DTE Agent — an honest AI trading agent
+# Every Trade Provable. Every Loss Capped.
 
-> **Hackathon submission.** One-page write-up: **[`docs/ONE_PAGER.md`](docs/ONE_PAGER.md)** ·
-> research autopsy: [`docs/research.md`](docs/research.md).
+> ### Required one-page write-up — AI logic · risk gates · Alpaca infrastructure
+> It ships in all three accepted forms:
+> **[`docs/ONE_PAGER.md`](docs/ONE_PAGER.md)** (repo page) ·
+> **[`docs/ONE_PAGER.pdf`](docs/ONE_PAGER.pdf)** (one printed page) ·
+> **slide 9 of [`assets/deck.pptx`](assets/deck.pptx)** (presentation).
+>
 > Alpaca paper account `PA38HG4D9653`, opened fresh for this event at $100,000.
-> **The submitted run used `decision_mode: rules_only`** — the deterministic stack, with the
-> LLM veto (`src/llm.py`, `src/gate.py`) shipped tested and runnable but *not* in the scored
-> path. We say which arm produced the numbers rather than implying the model did.
+> The scored sessions ran `decision_mode: rules_only` — the deterministic stack — with the
+> Claude veto (`src/llm.py`, `src/gate.py`) shipped tested and runnable via
+> `--decision-mode llm`.
 
 An intraday options agent for the Alpaca AI Trading Agents Hackathon. It trades
 **single-leg long 0DTE options** on SPY / QQQ / IWM through Alpaca, with risk
