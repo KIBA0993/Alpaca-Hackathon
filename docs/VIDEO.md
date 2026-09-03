@@ -1,12 +1,12 @@
 # Video presentation — script, shot list, recording plan
 
-**MP4, landscape, 3:00 (lablab's hard cap is 5:00).** Judges watch a lot of these back to
+**MP4, landscape, ~3:15 (lablab's hard cap is 5:00).** Judges watch a lot of these back to
 back. lablab's own guidance asks you to *"begin with an introduction, discuss your PDF
 presentation, then showcase your project's functionalities"* — this script follows that
 order: hook, slides, live demo.
 
 Deck: `assets/deck.pdf` (9 slides — slide 9 is the required write-up, not narrated) ·
-Cover: `assets/cover.png`
+Cover: `assets/cover.png` · Live demo: <https://every-trade-provable.streamlit.app>
 
 ---
 
@@ -27,6 +27,7 @@ Set up three windows to cut between:
 | A | Deck, presenter mode, full screen | slides 1-8 (9 is the write-up) |
 | B | Terminal, 18pt+, dark theme | the demo commands below |
 | C | Browser on the Alpaca paper dashboard | account `PA38HG4D9653` — equity + history |
+| D | Browser on the live demo | <https://every-trade-provable.streamlit.app> — "Try the agent" tab |
 
 **Mute notifications. Hide the bookmarks bar. Check no API key is on screen in window B or
 C before you hit record** — `alpaca doctor` prints a key prefix, so crop it or scroll past.
@@ -119,7 +120,20 @@ Read it conversationally. Bracketed lines are stage directions.
 >
 > *[run `--once`]* Here's one live scan — score, noise band, gate verdict, risk verdict.
 
-### 2:15 — 2:45 · The audit trail  *[Slide 7 → terminal B]*
+### 2:15 — 2:35 · Anyone can drive it  *[cut to window D]*
+
+> And you don't have to take my word for any of it. This is the agent's decision
+> stack, live, in a browser.
+>
+> *[drag the score slider below 0.70]* Below the threshold, it refuses.
+> *[drag it back up, then switch the direction to a put]* Above the threshold, but now
+> the direction fights the leader regime — it still refuses, and it tells you which rule
+> stopped it.
+>
+> Those sliders aren't a mock-up. They're calling the same gate and risk objects the live
+> agent constructs.
+
+### 2:35 — 3:00 · The audit trail  *[Slide 7 → terminal B]*
 
 > And this is the part I'd actually point you at.
 >
@@ -133,7 +147,7 @@ Read it conversationally. Bracketed lines are stage directions.
 > exactly why. That journal ships in the repo — clone it and check any decision against
 > the record.
 
-### 2:45 — 3:00 · Close  *[Slide 8]*
+### 3:00 — 3:15 · Close  *[Slide 8]*
 
 > A fresh hundred-thousand-dollar account, three sessions, up seventy-nine percent.
 >
@@ -156,5 +170,6 @@ Read it conversationally. Bracketed lines are stage directions.
 
 ## If you're short on time
 
-Record slides 1, 2, 7 plus the journal shot. Ninety seconds, and it still carries the whole
-argument: the result, the machine that produced it, and the receipts.
+Record slides 1, 2, the demo's "Try the agent" tab, and the journal shot. Ninety seconds,
+and it still carries the whole argument: the result, the machine that produced it, and the
+receipts.
