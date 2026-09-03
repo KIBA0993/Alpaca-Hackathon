@@ -1,21 +1,24 @@
 # Video presentation — script, shot list, recording plan
 
-**Target: 3:00.** Judges watch a lot of these back to back. Lead with the number, then show
-the machine that produced it.
+**MP4, landscape, 3:00 (lablab's hard cap is 5:00).** Judges watch a lot of these back to
+back. lablab's own guidance asks you to *"begin with an introduction, discuss your PDF
+presentation, then showcase your project's functionalities"* — this script follows that
+order: hook, slides, live demo.
 
-Deck: `assets/deck.pptx` (9 slides; slide 9 is the required write-up, not narrated) · Cover: `assets/cover.png`
+Deck: `assets/deck.pdf` (9 slides — slide 9 is the required write-up, not narrated) ·
+Cover: `assets/cover.png`
 
 ---
 
 ## Before you record
 
 ```bash
-cd ~/alpaca-hackathon && python3 assets/make_cover.py && node assets/make_deck.js && python3 assets/make_onepager.py
+cd ~/alpaca-hackathon && assets/build_all.sh
 ```
 
-Both pull equity, per-session P&L and the fill counts straight from the account, so this
-one command refreshes every figure in the deck and on the cover. Run it after the final
-session so the video, the slides and the Alpaca dashboard all agree.
+That rebuilds the cover, the deck (pptx **and** the PDF lablab asks for) and the write-up,
+pulling equity, per-session P&L and the fill counts straight from the account. Run it after
+the final session so the video, the slides and the Alpaca dashboard all agree.
 
 Set up three windows to cut between:
 
@@ -144,12 +147,12 @@ Read it conversationally. Bracketed lines are stage directions.
 ## Recording checklist
 
 - [ ] Regenerate the cover and deck so every number matches the final account
-- [ ] 1080p or better, landscape · deck full-screen, no window chrome
+- [ ] **MP4**, 1080p or better, landscape · deck full-screen, no window chrome
+- [ ] Under 5:00 — lablab rejects longer. 3:00 is the target
 - [ ] Terminal font ≥ 18pt — judges may watch on a laptop
 - [ ] **No API keys on screen at any point** (scan the recording back before uploading)
 - [ ] Say the account ID out loud once — it's how judges tie the video to the P&L
 - [ ] Upload unlisted to YouTube, paste the link in the submission form
-- [ ] Keep it under 5:00; 3:00 is better
 
 ## If you're short on time
 
