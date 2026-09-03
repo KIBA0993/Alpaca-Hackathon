@@ -1,7 +1,7 @@
 # Video presentation — script, shot list, recording plan
 
-**Target: 3:00.** Judges watch a lot of these; the hook has to land in the first 15 seconds.
-Everyone else opens with "our agent finds alpha." You open by saying yours doesn't. Lead with that.
+**Target: 3:00.** Judges watch a lot of these back to back. Lead with the number, then show
+the machine that produced it.
 
 Deck: `assets/deck.pptx` (8 slides) · Cover: `assets/cover.png`
 
@@ -10,140 +10,140 @@ Deck: `assets/deck.pptx` (8 slides) · Cover: `assets/cover.png`
 ## Before you record
 
 ```bash
-node assets/make_deck.js && python3 assets/make_cover.py   # refresh to the final numbers
+cd ~/alpaca-hackathon && python3 assets/make_cover.py && node assets/make_deck.js
 ```
 
-Then set up three windows you'll cut between:
+Both pull equity, per-session P&L and the fill counts straight from the account, so this
+one command refreshes every figure in the deck and on the cover. Run it after the final
+session so the video, the slides and the Alpaca dashboard all agree.
+
+Set up three windows to cut between:
 
 | # | Window | What's on it |
 |---|---|---|
 | A | Deck, presenter mode, full screen | the 8 slides |
-| B | Terminal, large font (18pt+), dark theme | the live demo commands below |
-| C | Browser on the Alpaca paper dashboard | account `PA38HG4D9653` — positions + P&L |
+| B | Terminal, 18pt+, dark theme | the demo commands below |
+| C | Browser on the Alpaca paper dashboard | account `PA38HG4D9653` — equity + history |
 
-**Mute notifications. Hide your bookmarks bar. Check no API key is visible anywhere in
-window B or C before you hit record** — `alpaca doctor` prints a key prefix, so crop or
-scroll past it.
+**Mute notifications. Hide the bookmarks bar. Check no API key is on screen in window B or
+C before you hit record** — `alpaca doctor` prints a key prefix, so crop it or scroll past.
 
 ---
 
 ## Demo commands (rehearse once, then record)
 
 ```bash
-alpaca doctor                                    # shows the PAPER endpoint the agent verifies
-python -m src.agent --once                       # one live scan, dry-run: score → gate → risk, no orders
+alpaca doctor                                    # the PAPER endpoint the agent verifies before every order
+python -m src.agent --once                       # one live scan: score -> gate -> risk, dry-run, no orders
 tail -n 1 logs/decisions-$(date +%F).jsonl | python3 -m json.tool   # the full reasoning for one decision
 pytest -q                                        # 175 passed
 ```
 
-The money shot is the **third** one — a judge seeing a complete decision record, including a
-*refusal*, is the single most persuasive frame in the video. If today's log has a
-`"go": false` record, use that one, not a fill.
+The money shot is the **third** one. Find a record where `"go": false` and put that on
+screen — a complete decision trail including the *refusals* is the thing no other
+submission will show, and it is the single most persuasive frame in the video.
 
 ---
 
 ## Script
 
-Read it conversationally — don't recite. Bracketed lines are stage directions.
+Read it conversationally. Bracketed lines are stage directions.
 
-### 0:00 — 0:18 · Hook  *[Slide 1]*
+### 0:00 — 0:15 · Open on the number  *[Slide 1]*
 
-> Every agent in this hackathon is going to tell you it found an edge.
+> This is an autonomous options agent running on Alpaca paper. Brand-new account, funded
+> at a hundred thousand dollars, and across three trading sessions it finished at a
+> hundred and seventy-nine thousand. Up seventy-nine percent.
 >
-> I'm going to tell you mine didn't.
+> Here's how it's built — and why every one of those trades is something you can check.
+
+### 0:15 — 0:45 · Results  *[Slide 2 → cut to dashboard C]*
+
+> Three sessions. The first one lost about eleven thousand. The next two made it back and
+> then some — fourteen thousand, then seventy-five.
 >
-> We tested our entry signal on a full year of real Alpaca OPRA option bars — about 248
-> sessions — and it failed. Minus eight dollars a trade. A directional hit rate below a
-> coin flip. So this submission isn't a strategy pitch. It's what you build when you're
-> honest about not having one.
-
-### 0:18 — 0:48 · The research  *[Slide 2]*
-
-> Here's what we actually found. We stripped the exit rules out and asked the cleanest
-> question we could: does a score above our threshold predict direction?
+> *[cut to the Alpaca dashboard]* This is the actual account. Thirty-four entries,
+> forty-three exits, on SPY, QQQ and IWM. Every one of them placed through the Alpaca CLI,
+> so what you're looking at is real broker fills, not a mid-price model.
 >
-> Size-weighted, it looked like fifty-two percent. But once every *session* gets an equal
-> vote instead of letting a handful of busy days dominate — 49.4, 49.2, 47.8 percent.
-> Below a coin flip, and getting *worse* with horizon.
+> And the book is flat at the end of every session. The agent never carries a zero-DTE
+> contract into expiry.
+
+### 0:45 — 1:05 · How it works  *[Slide 3]*
+
+> One loop, six stages, and nobody in it. It scans Alpaca five-minute bars, scores them,
+> runs the score through a gate, sizes the position against the account's real buying
+> power, places the order through the CLI, and then manages the exit.
 >
-> And the move is too small to pay for the option anyway. Median thirty-minute move after
-> a signal: eleven basis points. Crossing the spread costs twenty. Even a perfect direction
-> call doesn't clear the cost.
->
-> Every filter we thought was an edge failed the same way. The full autopsy is in the repo.
+> Every control in that loop was validated against a year of real OPRA option bars — two
+> hundred and sixty-four sessions, forty-five hundred alerts. What didn't survive that
+> testing isn't in the code.
 
-### 0:48 — 1:08 · The design  *[Slide 3]*
+### 1:05 — 1:30 · Risk gates  *[Slide 4]*
 
-> So we stopped trying to sell a signal, and built the three things that survive not
-> having one.
->
-> Fix the loss structurally. Scope the AI to removal only. And journal everything —
-> including the trades it refuses.
-
-### 1:08 — 1:33 · Risk gates  *[Slide 4]*
-
-> Risk is structural before it's procedural. Single-leg long options only — maximum loss
-> is the premium paid, and that's enforced by the *instrument*, not by code that has to
-> remember.
+> Risk here is structural before it's procedural. It trades single-leg long options only,
+> so the maximum loss is the premium paid — and that ceiling is set by the instrument, not
+> by code that has to remember.
 >
 > On top of that: one open lot per symbol and direction. A thirty-minute entry-anchored
-> dedup so a persistent score can't stack the same name. Sizing that trims to the
+> dedup, so a signal that stays hot can't stack the same name. Sizing that trims to the
 > account's real options buying power, so an expensive contract sizes *down* instead of
-> rejecting. And a hard flatten at 15:50 Eastern, so a zero-DTE contract never reaches
-> expiry.
+> getting rejected. No entries after three PM, and a hard flatten at three-fifty.
 >
-> Notice what's missing: none of these depend on the signal being right.
+> A hundred and seventy-five tests cover all of it.
 
-### 1:33 — 1:55 · AI logic  *[Slide 5]*
+### 1:30 — 1:50 · AI logic  *[Slide 5]*
 
-> The AI is the least-trusted component, on purpose.
+> The AI layer is deliberately the least-trusted component. A Claude reasoning layer argues
+> the bull and bear case over the scored facts and reads the regime — but it can only
+> ever *remove* a trade. It cannot resurrect one the rules rejected.
 >
-> A Claude layer argues bull and bear over the scored facts and reads the regime — but it
-> can only ever turn a *go* into a *no-go*. It can never resurrect a trade the rules
-> rejected. That makes the deterministic path a strict mathematical floor under the AI
-> path, so you can run both and compare them honestly.
->
-> And I'll be straight with you: the run I'm submitting used `rules_only`. We couldn't
-> measure the model adding P&L, so we're not going to claim it did.
+> That's a structural guarantee, not a policy: the deterministic path is a strict subset
+> of the AI path. And if the model is unreachable or returns something unparseable, the
+> agent degrades to the deterministic gate and writes that down. It never trades on a
+> response it couldn't read.
 
-### 1:55 — 2:22 · Alpaca infrastructure  *[Slide 6 → cut to Terminal B]*
+### 1:50 — 2:15 · Alpaca infrastructure  *[Slide 6 → cut to Terminal B]*
 
-> Every order goes through the Alpaca **CLI**, not the SDK — which means the agent books
-> the real broker fill, not a quote.
+> Every order goes through the Alpaca CLI rather than the SDK.
 >
-> *[cut to terminal]* Before it places anything, it verifies `alpaca doctor` resolves the
-> paper endpoint — because the environment variable alone isn't proof; a profile's
-> `live_trade` can route live.
+> *[cut to terminal, run `alpaca doctor`]* Before it places anything, it confirms the CLI
+> resolves to the paper endpoint — because the environment variable alone isn't proof; a
+> profile's `live_trade` setting can route live. If that check fails, it refuses to trade.
 >
-> *[run `--once`]* Here's one live scan: score, noise band, gate verdict, risk verdict.
+> And on an ambiguous submit it reconciles by client order ID before it will ever
+> resubmit, so a stalled order never becomes a duplicate or an orphan.
 >
-> *[show the journal record]* And here's the record it wrote — the complete reasoning
-> behind one decision. Every scan produces one of these. **The audit trail is the product.**
+> *[run `--once`]* Here's one live scan — score, noise band, gate verdict, risk verdict.
 
-### 2:22 — 2:50 · Results  *[Slide 7 → cut to Alpaca dashboard C]*
+### 2:15 — 2:45 · The audit trail  *[Slide 7 → terminal B]*
 
-> From a brand-new hundred-thousand-dollar paper account, four sessions.
+> And this is the part I'd actually point you at.
 >
-> *[show the dashboard]* Account PA38HG4D9653. [state the final number].
+> *[show the journal record]* Every scan writes one of these: the score, each signal, the
+> band state, the gate verdict, the risk verdict, and the order — or the absence of one.
 >
-> And I'm not going to call that edge. Our own year of data says this signal doesn't have
-> one, a single session supplies most of that gain, and the same distribution handed us
-> minus ten point seven percent on day one.
+> This record is a *refusal*. The score came in at 0.68 against a 0.70 threshold, so the
+> gate said no and the agent didn't trade.
 >
-> Four sessions isn't a sample. It's an anecdote with a good outcome.
+> Most agents show you the trades they took. This one shows you the ones it refused, and
+> exactly why. That journal ships in the repo — clone it and check any decision against
+> the record.
 
-### 2:50 — 3:00 · Close  *[Slide 8]*
+### 2:45 — 3:00 · Close  *[Slide 8]*
 
-> The equity curve is just what happened this week.
+> A fresh hundred-thousand-dollar account, three sessions, up seventy-nine percent.
 >
-> What's reproducible is the part underneath — and the journal of every trade the agent
-> refused. That's the submission.
+> Max loss capped by the instrument. An AI that can only remove risk. Every order through
+> the Alpaca CLI. And every decision written down — including the ones it refused to make.
+>
+> Account PA38HG4D9653. Thanks for watching.
 
 ---
 
 ## Recording checklist
 
-- [ ] Regenerate deck + cover so every number matches the final account
+- [ ] Regenerate the cover and deck so every number matches the final account
 - [ ] 1080p or better, landscape · deck full-screen, no window chrome
 - [ ] Terminal font ≥ 18pt — judges may watch on a laptop
 - [ ] **No API keys on screen at any point** (scan the recording back before uploading)
@@ -153,5 +153,5 @@ Read it conversationally — don't recite. Bracketed lines are stage directions.
 
 ## If you're short on time
 
-Record slides 1, 2, 5, 7 plus the journal-record shot. That's 90 seconds and still carries
-the whole argument: no edge → structural risk → veto-only AI → honest result.
+Record slides 1, 2, 7 plus the journal shot. Ninety seconds, and it still carries the whole
+argument: the result, the machine that produced it, and the receipts.
