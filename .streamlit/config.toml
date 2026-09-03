@@ -1,0 +1,14 @@
+# Dark theme matching assets/cover.png and assets/deck.pdf, so the hosted demo,
+# the cover image and the slides all read as one submission.
+[theme]
+base = "dark"
+primaryColor = "#F0B429"
+backgroundColor = "#0B0E14"
+secondaryBackgroundColor = "#141922"
+textColor = "#FFFFFF"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

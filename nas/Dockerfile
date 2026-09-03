@@ -33,7 +33,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# streamlit is for the hosted demo (streamlit_app.py), never imported by the
+# agent — stripped here so the trading image stays exactly the tested stack.
+RUN grep -v '^streamlit' requirements.txt > /tmp/req.txt \
+    && pip install --no-cache-dir -r /tmp/req.txt
 
 # Application code only. NO .env here (see .dockerignore) — keys are injected at
 # runtime so they never enter an image layer.

@@ -23,6 +23,7 @@ PDF = ROOT / "docs" / "ONE_PAGER.pdf"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ACCT = "PA38HG4D9653"
 REPO = "github.com/KIBA0993/Alpaca-Hackathon"
+DEMO = (pathlib.Path(__file__).resolve().parent / "demo_url.txt").read_text().strip()
 START = 100_000.0
 
 
@@ -65,7 +66,8 @@ Paper account `{acct}` · single-leg long 0DTE on SPY / QQQ / IWM · paper only,
 An autonomous agent that scans, scores, gates, sizes, executes and manages its own book with
 no human in the loop. Every control in it was validated against a year of real Alpaca OPRA
 option bars — 264 sessions, 4,544 alerts — and what did not survive that testing is not in
-the code. Repo: `{repo}`
+the code.
+**Try it: {demo}** · Repo: `{repo}`
 
 ## 1 · AI logic
 
@@ -175,7 +177,7 @@ def render_pdf():
 
 def main():
     b = book()
-    OUT.write_text(TEMPLATE.format(acct=ACCT, repo=REPO, **b))
+    OUT.write_text(TEMPLATE.format(acct=ACCT, repo=REPO, demo=DEMO, **b))
     words = len(OUT.read_text().split())
     print(f"wrote {OUT}  —  ${b['equity']:,.0f} ({b['pct']:+.1f}%), {b['sessions']} sessions, "
           f"{b['entries']} entries / {b['exits']} exits  ·  {words} words")

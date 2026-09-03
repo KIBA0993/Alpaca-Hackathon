@@ -25,6 +25,10 @@ const INK = "FFFFFF", INK2 = "A1A8B5", MUTED = "6B7686";
 const SANS = "Arial", MONO = "Courier New";
 
 const REPO = "github.com/KIBA0993/Alpaca-Hackathon";
+// Live demo URL, single-sourced from assets/demo_url.txt so the deck, the
+// one-pager and the README can never drift apart.
+const DEMO = fs.readFileSync(path.join(__dirname, "demo_url.txt"), "utf8")
+  .trim().replace(/^https?:\/\//, "");
 const ACCT = "PA38HG4D9653";
 const START = 100000;
 
@@ -107,8 +111,8 @@ function shell(slide, kicker) {
   slide.background = { color: BG };
   if (kicker) slide.addText(kicker, { x: 0.6, y: 0.42, w: 8, h: 0.3, isTextBox: true,
     fontFace: MONO, fontSize: 11, color: MUTED, charSpacing: 2 });
-  slide.addText(REPO, { x: 8.0, y: 6.85, w: 4.73, h: 0.3, isTextBox: true, align: "right",
-    fontFace: MONO, fontSize: 9, color: MUTED });
+  slide.addText(`${DEMO}  ·  ${REPO}`, { x: 6.4, y: 6.85, w: 6.33, h: 0.3,
+    isTextBox: true, align: "right", fontFace: MONO, fontSize: 9, color: MUTED });
 }
 
 function title(slide, text, y = 0.95) {

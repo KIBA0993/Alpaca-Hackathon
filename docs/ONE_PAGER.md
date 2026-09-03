@@ -7,7 +7,8 @@ Paper account `PA38HG4D9653` · single-leg long 0DTE on SPY / QQQ / IWM · paper
 An autonomous agent that scans, scores, gates, sizes, executes and manages its own book with
 no human in the loop. Every control in it was validated against a year of real Alpaca OPRA
 option bars — 264 sessions, 4,544 alerts — and what did not survive that testing is not in
-the code. Repo: `github.com/KIBA0993/Alpaca-Hackathon`
+the code.
+**Try it: https://every-trade-provable.streamlit.app** · Repo: `github.com/KIBA0993/Alpaca-Hackathon`
 
 ## 1 · AI logic
 

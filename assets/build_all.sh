@@ -12,10 +12,14 @@
 #   assets/deck.pdf        the same deck     (lablab wants the slides as PDF)
 #   docs/ONE_PAGER.md      the required write-up
 #   docs/ONE_PAGER.pdf     verified to be exactly one page
+#   assets/snapshot.json   what the hosted demo (streamlit_app.py) reads
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 SOFFICE="${SOFFICE:-/Applications/LibreOffice.app/Contents/MacOS/soffice}"
+
+echo "==> snapshot (the hosted demo reads this)"
+python3 assets/make_snapshot.py
 
 echo "==> cover"
 python3 assets/make_cover.py

@@ -1,0 +1,1 @@
+https://every-trade-provable.streamlit.app

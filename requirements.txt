@@ -11,3 +11,4 @@ pandas==2.3.3          # bar math (VWAP, RSI, EMA, baselines)
 numpy==1.26.4          # the numpy ABI pandas 2.3.3 was tested against
 anthropic==0.107.0     # optional LLM decision gate (decision_mode = llm; unused in rules_only)
 pytest==9.0.3          # tests (run at image build time as a deploy gate)
+streamlit==1.63.0      # hosted demo only (streamlit_app.py); excluded from the trading image

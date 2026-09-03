@@ -6,6 +6,9 @@
 > **[`docs/ONE_PAGER.pdf`](docs/ONE_PAGER.pdf)** (one printed page) ·
 > **slide 9 of [`assets/deck.pptx`](assets/deck.pptx)** (presentation).
 >
+> **Try it live — [every-trade-provable.streamlit.app](https://every-trade-provable.streamlit.app)** ·
+> the result, the *real* gate you can drive yourself, and the decision journal.
+>
 > Alpaca paper account `PA38HG4D9653`, opened fresh for this event at $100,000.
 > The scored sessions ran `decision_mode: rules_only` — the deterministic stack — with the
 > Claude veto (`src/llm.py`, `src/gate.py`) shipped tested and runnable via
@@ -84,7 +87,8 @@ duplicated or orphaned.
 
 Every scan writes one JSONL record with the **full reasoning** — score, each
 signal, band state, gate verdict, risk verdict, and any order — to
-`logs/decisions-YYYY-MM-DD.jsonl`. The audit trail is the product.
+`logs/decisions-YYYY-MM-DD.jsonl` — **committed to this repo**, so any decision can be
+checked against the record. The audit trail is the product.
 
 ## Modules
 
@@ -100,7 +104,41 @@ signal, band state, gate verdict, risk verdict, and any order — to
 | `src/broker_cli.py` | order placement through the Alpaca **CLI** (submit + poll for fill) |
 | `src/agent.py` | the scan→gate→risk→execute→manage loop |
 | `src/journal.py` | append-only JSONL decision log |
+| `streamlit_app.py` | the hosted demo — drives the real gate, risk and exit code |
 | `docs/research.md` | the year of OPRA validation behind these controls |
+
+## The hosted demo
+
+**[every-trade-provable.streamlit.app](https://every-trade-provable.streamlit.app)** — three
+things a repo cannot show you:
+
+| tab | what it does |
+|---|---|
+| **Live result** | the equity curve, every session's realised P&L, and the fill counts, straight from the paper account |
+| **Try the agent** | sliders wired into `src/gate.py` and `src/risk.py` — **the agent's own objects**, not a mock-up. Move the score, the noise band or the leader breadth and you get the verdict *and the exact rationale string it would journal*. A second panel does the same for the exit ladder, calling `Executor._exit_reason` directly |
+| **Decision journal** | the real JSONL records, filterable down to just the **refusals** |
+
+It needs no API keys: the account figures come from `assets/snapshot.json`, frozen from the
+live account by `assets/make_snapshot.py`. Give it Alpaca paper keys (environment or
+`.streamlit/secrets.toml`) and the equity refreshes live instead.
+
+```bash
+pip install -r requirements.txt
+python3 assets/make_snapshot.py     # refresh the frozen account figures (needs .env)
+streamlit run streamlit_app.py      # http://localhost:8501
+```
+
+<details><summary>Deploying it (Streamlit Community Cloud, free)</summary>
+
+1. <https://share.streamlit.io> → **Create app** → *Deploy a public app from GitHub*
+2. Repository `KIBA0993/Alpaca-Hackathon`, branch `main`, main file `streamlit_app.py`
+3. **Advanced settings → Python version `3.11`** (the stack is pinned to it)
+4. Custom subdomain `every-trade-provable`, then **Deploy**
+
+Nothing secret is needed — it runs off the committed snapshot. To make the equity refresh
+live instead, add `ALPACA_API_KEY` and `ALPACA_SECRET_KEY` under *Settings → Secrets*; they
+are only ever used for a read-only `GET /v2/account`.
+</details>
 
 ## Run it
 

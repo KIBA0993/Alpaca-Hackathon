@@ -4,9 +4,12 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-logs/
-*.jsonl
 .DS_Store
+.streamlit/secrets.toml
+
+# NOT ignored: logs/*.jsonl. The decision journal is the deliverable — it ships
+# so anyone can check a decision against the record. It holds no keys, no
+# account identifiers and no personal data.
 
 # local working notes + config backups (not part of the public submission)
 docs/SUBMISSION.md
@@ -20,3 +23,6 @@ config.json.bak*
 config.arm*.json
 nas/docker-compose.arm*.yml
 tests/test_config_arms.py
+
+# local editor/launch scratch
+.claude/
