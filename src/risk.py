@@ -4,36 +4,29 @@ Single-leg LONG options => max loss per trade is the premium paid, so risk is
 DEFINED by construction. These checks bound how much premium can be at risk at
 once and keep entries inside the safe part of the session.
 
-Two arm-C entry rules also live here, because they are "may I enter" decisions
-driven by session state rather than by the signal:
+Three per-symbol entry rules also live here, because they are "may I enter"
+decisions driven by session state rather than by the signal:
 
-  already-holding guard (arm C's `_held_symbol_directions`)
+  already-holding guard
       Never open a second lot on a symbol+direction already held; re-enter only
-      after that lot has fully closed. Unconditional, like the arms — a
-      correctness guard, not a tunable. It is what the entry dedup below CANNOT
-      provide: dedup is a 30-min throttle, so once the window expires a still-
-      qualifying signal would otherwise stack a second lot on a symbol already
-      held (live IWM 10:37 then 11:07 on 2026-08-31).
+      after that lot has fully closed. Unconditional — a correctness guard, not
+      a tunable. It is what the entry dedup below CANNOT provide: dedup is a
+      30-min throttle, so once the window expires a still-qualifying signal
+      would otherwise stack a second lot on a symbol already held (observed
+      2026-08-31: IWM at 10:37 and again at 11:07).
 
   one_direction_per_underlying
       Once a symbol has traded a direction today, the opposite direction is
-      refused for the rest of the session. (Arm B/C inherit this; it is what
-      removes arm A's `flip_opposite_entry` exits, the worst bucket in the book
-      at -$139/trade.)
+      refused for the rest of the session. It keeps the agent from paying the
+      spread twice to flip its own position every time an intraday signal
+      reverses.
 
   entry cooldown, optionally SCOPED to the prior exit reason
       After a close on a symbol, refuse re-entry on that symbol for N minutes.
-      With `after_exit_reasons` empty the rule is BLANKET (arm C as shipped);
-      with ["time_stop"] it only fires after a time-stop exit. Leaving the list
-      configurable keeps the blanket rule one config edit away, so the two can
-      still be compared.
-
-      HONEST STATUS: the scoped variant looked strong on 12 live sessions
-      (+$388/session, p=0.017) and then FAILED on the 264-session OPRA harness —
-      negative at slip 0 (-$2,314), sign-flipping across the calibration ladder,
-      every session-clustered CI straddling zero. It is not an established edge.
-      It is defensible as risk hygiene (do not immediately re-buy what just
-      stopped you out), which is the claim being made here.
+      With `after_exit_reasons` empty the rule is BLANKET; with ["time_stop"] it
+      fires only after a time-stop exit, which is how it ships: do not
+      immediately re-buy what just timed out on you. Leaving the list
+      configurable keeps the blanket rule one config edit away.
 
 Pure logic (state passed in) so it is unit-testable with no account or clock.
 """
@@ -79,7 +72,7 @@ class RiskManager:
 
     @property
     def dedup_minutes(self) -> float:
-        """Entry-anchored throttle (the arms' `dedup_minutes`, default 30). After
+        """Entry-anchored throttle (`dedup_minutes`, default 30). After
         an entry on a symbol+direction, refuse another on that same pair for N
         minutes — regardless of whether anything has closed. This is what stops a
         symbol being stacked every scan while its score stays above the gate; the
@@ -99,9 +92,9 @@ class RiskManager:
     def check_entry_rules(self, st: RiskState) -> tuple[bool, str]:
         """Per-symbol gates: already-holding, one-direction, entry dedup, then the
         (optionally scoped) exit cooldown."""
-        # Already-holding guard (arm C's `_held_symbol_directions`): never stack a
+        # Already-holding guard: never stack a
         # second open lot on a symbol+direction we already hold. Unconditional, as
-        # in the arms — it is a correctness guard, not a tunable. It catches exactly
+        # — it is a correctness guard, not a tunable. It catches exactly
         # what the dedup throttle cannot: a lot still open once the 30-min window
         # has expired. Reported first, so a held-and-throttled entry reads as
         # "already holding" rather than as a stale timer.
@@ -117,7 +110,7 @@ class RiskManager:
                            f"{st.direction} refused (one_direction_per_underlying)")
         # Entry-anchored dedup: block a repeat entry on the same symbol+direction
         # within `dedup_minutes` of the last one, so a persistent high score does
-        # not stack the same trade every scan (arm C's shipped behaviour).
+        # not stack the same trade every scan.
         ddm = self.dedup_minutes
         if (ddm > 0 and st.mins_since_last_entry is not None
                 and st.mins_since_last_entry < ddm):
@@ -149,8 +142,8 @@ class RiskManager:
         cap = int(self.cfg.get("max_concurrent_positions", 3))
         if st.open_positions >= cap:
             return False, f"at max concurrent positions ({cap})"
-        # 0 / absent => no daily entry-count cap (arm C has none; it throttles with
-        # max_alerts_per_run + dedup + the already-holding guard instead).
+        # 0 / absent => no daily entry-count cap: turnover is throttled by
+        # max_alerts_per_run + dedup + the already-holding guard instead.
         dmax = int(self.cfg.get("max_trades_per_day", 0) or 0)
         if dmax > 0 and st.trades_today >= dmax:
             return False, f"at max trades per day ({dmax})"

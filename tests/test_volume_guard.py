@@ -1,7 +1,7 @@
 """test_volume_guard.py — the winsoriser that defends VWAP and relative_volume
 against Yahoo's corrupt 5-minute volume bars.
 
-Ported behaviourally from the live arms' test_volume_guard.py. Yahoo
+Yahoo
 intermittently serves a bar whose Volume field is 5-257x the real value while
 the price fields on the same bar stay exact; relative_volume sums a CUMULATIVE
 series, so one bad bar poisons every later scan of the session. These tests pin

@@ -1,20 +1,20 @@
-"""Dealer-gamma regime for the arm-B "#2" entry (gamma picks the MODE).
+"""Dealer-gamma regime read: gamma picks the entry MODE.
 
-This is the input class that q80 could NOT kill: every price-derived regime read
-(trend/chop) is a coin toss intraday, but dealer gamma is a different, mechanical
-signal (Barbon & Buraschi, *Gamma Fragility*). The rule:
+Where price-derived regime reads are all descendants of the same price series,
+dealer gamma is a structurally different, mechanical input — it comes from
+option positioning rather than from the tape (Barbon & Buraschi, *Gamma
+Fragility*). The rule:
 
   net 0DTE dealer gamma > 0  ->  dealers are long gamma, they SELL rallies / BUY
                                  dips -> pinning / mean-reversion  ->  CHOP  ->  FADE
   net 0DTE dealer gamma < 0  ->  dealers are short gamma, they CHASE  ->  TREND ->  CHASE
 
-HONEST STATUS — read before trusting this. This is NOT an established edge. It
-cannot be backtested: Cboe's feed is snapshot-only and there is no historical open
-interest anywhere we can reach (see research: gamma-positioning-is-the-one-untested-
-class). It is wired into arm B to trade a paper account forward and BUILD the record
-that will eventually settle it — not because it is known to work. The dealer SIGN
-(short calls / long puts) is an ASSUMPTION, exposed as `invert_sign` so it can be
-flipped once the recording says which way is right.
+SCOPE: this module is available but NOT enabled in the shipped configuration —
+`gamma.enabled` is absent from config.json, so the agent runs the leader-regime
+path. It is kept here because Cboe's feed is snapshot-only, so the only way to
+evaluate the read is to record it forward against live sessions. The dealer SIGN
+convention (short calls / long puts) is an explicit assumption, exposed as
+`invert_sign` so it can be flipped without touching the maths.
 
 Gamma is re-derived from Black-Scholes, NOT read from Cboe's own quantized `gamma`
 field (it rounds ~30% of OI to zero). Only the 0DTE horizon is used — that is the

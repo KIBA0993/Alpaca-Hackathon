@@ -110,7 +110,7 @@ def test_scan_resets_intraday_cache():
 
 
 # ---------------------------------------------------------------------------
-# Wiring added with the arm-C rebuild: regime is computed once, and the
+# Regime wiring: it is computed once, and the
 # per-symbol entry-rule state actually reaches the RiskManager.
 # ---------------------------------------------------------------------------
 def test_regime_computed_once_per_session_not_per_symbol():
@@ -216,7 +216,7 @@ def test_regime_defaults_to_full_basket_when_config_omits_min_symbols():
 
 
 def test_max_alerts_per_run_caps_entries_per_scan():
-    """Arm C's per-scan entry cap (max_alerts_per_run): at most N NEW entries open
+    """The per-scan entry cap (max_alerts_per_run): at most N NEW entries open
     in one scan pass across all symbols; the rest are skipped that pass and read as
     a max_alerts_per_run block, not stacked."""
     from src.execution import Position
@@ -285,7 +285,7 @@ def test_max_alerts_per_run_caps_entries_per_scan():
 
 
 def test_manage_pass_runs_exits_without_an_entry_scan():
-    """Arm B's fast loop calls _manage_pass on its own between entry scans: it must
+    """The fast loop calls _manage_pass on its own between entry scans: it must
     manage positions WITHOUT resetting the bar cache or scoring any symbol (that is
     the yfinance-touching half, kept on the slow cadence)."""
     a = _agent()

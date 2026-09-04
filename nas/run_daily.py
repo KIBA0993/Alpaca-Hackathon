@@ -28,9 +28,9 @@ ET = ZoneInfo("America/New_York")
 WIN_START = (9, 20)     # ~10 min before the 09:30 open; the agent no-gos pre-open
 WIN_END = (15, 50)      # the agent self-flattens at 15:50 — do not relaunch past it
 APP_DIR = "/app"
-# Which config the agent loads. Unset (arm A) => src.agent's default config.json.
-# Arm B's container sets AGENT_CONFIG=config.armB.json (the ladder-exit sibling),
-# so both arms run the SAME image and differ only by this file + their own .env.
+# Which config the agent loads. Unset => src.agent's default config.json. A
+# container can point AGENT_CONFIG at a different file to run a variant off the
+# SAME image, differing only by that config and its own .env.
 AGENT_CONFIG = os.environ.get("AGENT_CONFIG", "").strip()
 
 

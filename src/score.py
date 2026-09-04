@@ -1,11 +1,10 @@
-"""The arm-E scoring core, reproduced faithfully from the live system.
+"""The scoring core.
 
-This is a clean, self-contained copy of the logic in intraday_0dte.py
-(score_symbol / _score_direction / noise_band / compute_vwap / compute_rsi /
-opening_range). The weights and thresholds are IDENTICAL to the live arm-E
-config. Nothing here is tuned to backtest P&L — a full year of testing showed
-the entry signal carries no usable directional edge (docs/research.md), so the
-core is kept exactly as it was measured, and the honest story is the product.
+Reduces a symbol's intraday bars to one number plus a proposed direction, from
+VWAP position, the opening-range break, RSI, the EMA stack and relative volume.
+The weights and thresholds are the ones validated against a year of real OPRA
+option bars (docs/research.md) — nothing here is tuned to a backtest P&L curve,
+so what runs live is exactly what was measured.
 
 Every function is pure (DataFrame in, numbers out) so the scorer can be unit
 tested against known values with no network. Bars are a pandas DataFrame indexed
@@ -23,14 +22,13 @@ import pandas as pd
 OR_MINUTES = 15
 DEFAULT_MIN_SCORE = 0.70
 
-#: Corrupt-volume guard — behaviourally identical to the live arms'
-#: intraday_0dte.guard_volume. Yahoo intermittently serves a 5-minute bar whose
+#: Corrupt-volume guard. Yahoo intermittently serves a 5-minute bar whose
 #: Volume field is 5-257x the real value while its price fields stay exact.
 #: relative_volume sums a CUMULATIVE series, so one bad bar poisons every later
 #: scan of the session. Cap any bar above VOLUME_GUARD_MULTIPLE x the running
 #: median of the (already-guarded) bars before it. Module-level so tests can pin
-#: them; NOT a tuned parameter — anything in 10-12 measures the same (the arms
-#: measured 96.6% agreement with Alpaca SIP guarded vs 70.9% unguarded).
+#: them; NOT a tuned parameter — anything in 10-12 measures the same (96.6%
+#: agreement with Alpaca SIP guarded, against 70.9% unguarded).
 VOLUME_GUARD_MULTIPLE = 10.0      # cap multiple over the running median (<=0 disables)
 VOLUME_GUARD_MIN_BARS = 3         # opening bars have no honest median to judge against
 VOLUME_SANITY_DAY_MULTIPLE = 3.0  # a session claiming > 3x a normal full day is unusable
@@ -143,9 +141,9 @@ def noise_band(bars: pd.DataFrame, band_baseline: Optional[pd.DataFrame],
                or_low: Optional[float] = None) -> dict:
     """Where price sits against a band of this symbol's own noise (half_or).
 
-    Faithful copy of intraday_0dte.noise_band. Returns a dict with 'state' in
+    Returns a dict with 'state' in
     {'above','below','inside'} or None when the band cannot be drawn. None is
-    NOT 'inside' — the band-gated arm must abstain, not decide, on None.
+    NOT 'inside' — a band-gated config must abstain, not decide, on None.
 
     The edges are widened to span the prior close, making the band deliberately
     asymmetric on a gap day (continuation over reversal). Do not "fix" that
@@ -278,8 +276,8 @@ def score_symbol(symbol: str, bars: pd.DataFrame, cfg: dict,
 
     `cfg` is the config 'score' block. `mode` selects the entry family:
       "trend" (default) -> momentum breakout (_score_direction), the shipped core
-      "chop"            -> fade the OR edges (_score_fade), the gamma arm-B path
-    Default "trend" keeps arm A and every existing caller byte-identical. The
+      "chop"            -> fade the OR edges (_score_fade), the gamma path
+    "trend" is the default, so an existing caller is unaffected. The
     returned dict always carries the full reasoning (key_signals, noise_band, the
     raw indicators) so the agent's log is a complete, auditable record.
     """

@@ -1,6 +1,6 @@
 """The agent loop: scan -> score -> gate -> risk -> execute -> manage.
 
-Entry stack (arm C + half-OR band + leader regime):
+Entry stack (score + half-OR band + leader regime):
     score >= min_score
     price OUTSIDE the half-OR noise band
     direction agrees with the leader-breadth regime ("T6")
@@ -61,13 +61,14 @@ class Agent:
         self._baselines: dict[str, tuple] = {}
         self._regime_cache: dict = {}
         self._gamma_cache: dict = {}
-        # Arm B ("#2"): dealer-gamma regime picks the entry MODE per symbol
-        # (chop -> fade the OR edges, trend -> chase breakouts) and T6 is off.
-        # Any other arm leaves gamma.enabled false and runs the leader (T6) path.
+        # Optional: a dealer-gamma regime picks the entry MODE per symbol
+        # (chop -> fade the OR edges, trend -> chase breakouts) instead of the
+        # leader filter. Off unless gamma.enabled is set; the shipped config
+        # leaves it off and runs the leader (T6) path.
         self._gamma_on = bool(cfg.gamma.get("enabled", False))
         print(f"# agent ready | mode={cfg.mode} decision={cfg.decision_mode} "
               f"symbols={cfg.symbols} paper={cfg.secrets.alpaca_paper}"
-              f"{' | gamma-regime ON (arm B #2)' if self._gamma_on else ''}")
+              f"{' | gamma-regime ON' if self._gamma_on else ''}")
 
     def _regime(self, now: datetime) -> dict:
         """Leader-breadth regime for today, computed once and reused all session.
@@ -107,7 +108,7 @@ class Agent:
         return reg
 
     def _gamma_regime(self, now: datetime) -> dict:
-        """Per-symbol dealer-gamma regime for today (arm B "#2"), computed once
+        """Per-symbol dealer-gamma regime for today, computed once
         and reused all session — the same session-open read the eventual
         validation will use. Returns {symbol: {mode, net_gex, flip, ...}}.
 
@@ -144,7 +145,7 @@ class Agent:
     def scan_once(self) -> None:
         """One full pass: manage exits, then (unless flattening) scan for entries.
         Used by --once and by the loop's entry cadence. The loop can also call
-        `_manage_pass` on its own, faster cadence (arm B's 1-min exit management)."""
+        `_manage_pass` on its own, faster cadence (e.g. 1-minute exits)."""
         now = datetime.now(ET)
         force_eod = self.risk.should_flatten(now.time())
         self._manage_pass(now, force_eod=force_eod)
@@ -180,7 +181,7 @@ class Agent:
         # pass re-fetches fresh bars instead of re-scoring the first snapshot.
         # (Baselines are memoized at the agent level, so they are not refetched.)
         self.md.reset_intraday_cache()
-        # Per-scan entry cap (arm C's max_alerts_per_run): at most this many NEW
+        # Per-scan entry cap (max_alerts_per_run): at most this many NEW
         # entries open in one scan pass across all symbols; 0 disables it. Read
         # defensively so a config without a `scan` section (unit-test stubs) is
         # simply uncapped rather than an AttributeError.
@@ -199,7 +200,7 @@ class Agent:
 
     def _scan_symbol(self, symbol: str, now: datetime,
                      regime: dict | None = None) -> None:
-        # Arm B ("#2"): the per-symbol gamma regime picks the entry MODE. A
+        # When enabled, the per-symbol gamma regime picks the entry MODE. A
         # symbol whose gamma is unusable (Cboe outage, thin 0DTE chain) abstains
         # unless config says allow — in which case it falls back to momentum.
         score_mode = "trend"
@@ -239,7 +240,7 @@ class Agent:
         if not decision.go:
             return
 
-        # Per-scan entry cap (arm C's max_alerts_per_run). Checked here, after the
+        # Per-scan entry cap (max_alerts_per_run). Checked here, after the
         # decision is journaled but before the option-chain call, so a suppressed
         # entry costs no quote and is still visible in the log.
         cap = getattr(self, "_max_alerts", 0)
@@ -286,10 +287,10 @@ class Agent:
     def loop(self) -> None:
         """Run through the session. Exits are managed every `manage_step_minutes`
         (default = scan cadence); entries are scanned every `scan_step_minutes`.
-        With manage_step < scan_step (arm B: 1 vs 5) exits react each minute off
+        With manage_step < scan_step (e.g. 1 vs 5) exits react each minute off
         Alpaca quotes while entry scoring stays on the slower yfinance cadence, so
-        the fast loop adds no yfinance load. When they are equal (arm A) each tick
-        does both, exactly as before."""
+        the fast loop adds no yfinance load. When they are equal, each tick does
+        both."""
         scan_step = int(self.cfg.scan.get("scan_step_minutes", 5))
         manage_step = int(self.cfg.scan.get("manage_step_minutes", scan_step)
                           or scan_step)

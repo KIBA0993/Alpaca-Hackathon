@@ -1,4 +1,4 @@
-"""Arm-C entry rules: one-direction-per-underlying + the SCOPED cooldown."""
+"""Entry rules: one-direction-per-underlying + the SCOPED cooldown."""
 from datetime import time
 import pytest
 from src.risk import RiskManager, RiskState
@@ -66,7 +66,7 @@ def test_no_prior_exit_never_blocks():
 
 
 def test_empty_reason_list_means_blanket_cooldown():
-    """Arm C's shipped rule must remain reachable by config alone."""
+    """The blanket variant must remain reachable by config alone."""
     r = rm({**ENTRY, "entry_cooldown_after_exit_reasons": [], "entry_cooldown_minutes": 30})
     assert not r.check_entry(mk(mins_since_last_exit=5, last_exit_reason="runner_trail"))[0]
     assert not r.check_entry(mk(mins_since_last_exit=5, last_exit_reason="time_stop"))[0]
@@ -113,9 +113,9 @@ def test_dedup_is_reported_before_the_global_caps():
     assert not ok and "dedup" in why
 
 
-# ------------------------------------------- already-holding guard (arm C parity)
+# ------------------------------------------------- already-holding guard
 def test_already_holding_blocks_a_second_lot_same_symbol_direction():
-    """Arm C's _held_symbol_directions guard: never stack a second open lot on a
+    """The already-holding guard: never stack a second open lot on a
     pair already held. This is the case dedup misses — a lot still open after the
     30-min window (live IWM 10:37 then 11:07 on 2026-08-31)."""
     ok, why = rm(ENTRY_DD).check_entry(
@@ -137,7 +137,7 @@ def test_not_holding_is_inert():
 
 
 def test_already_holding_guard_needs_no_config_key():
-    """Unconditional, like the arms — it fires even with an empty entry config."""
+    """Unconditional — it fires even with an empty entry config."""
     r = RiskManager({"no_entry_after": "15:00"})
     ok, why = r.check_entry(mk(direction="put", already_holding=True))
     assert not ok and "already holding" in why
@@ -159,7 +159,7 @@ def test_global_caps_still_apply_when_entry_rules_pass():
 
 
 def test_daily_trade_cap_is_off_by_default_and_at_zero():
-    """max_trades_per_day removed (arm C parity): absent or 0 => no daily count
+    """max_trades_per_day absent or 0 => no daily count
     cap, so a high trades_today does NOT block on its own."""
     assert rm().check_entry(mk(trades_today=999))[0]          # absent -> uncapped
     r = rm(risk={"no_entry_after": "15:00", "max_trades_per_day": 0})

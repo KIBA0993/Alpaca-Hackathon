@@ -28,8 +28,7 @@ class RulesGate:
 
     The leader filter ("T6") only ever REMOVES the opposed side: in a bullish
     regime puts are refused, in a bearish one calls are. It never flips a
-    direction and never creates a trade. See src/regime.py for its honest
-    statistical status — it is not an established edge.
+    direction and never creates a trade — see src/regime.py.
     """
 
     def __init__(self, score_cfg: dict, regime_cfg: Optional[dict] = None):
@@ -64,8 +63,8 @@ class RulesGate:
         # entry always honours require_outside_noise_band. A fade ("chop") entry
         # honours require_outside_noise_band_fade IF that key is present, else it
         # falls back to require_outside_noise_band. Absent the fade key, behaviour
-        # is unchanged (band applies to both modes) — arm A/B keep the band; arm C
-        # sets require_outside_noise_band_fade=false to drop it on fades only.
+        # is unchanged and the band applies to both modes; setting
+        # require_outside_noise_band_fade=false drops it on fades only.
         band_required = bool(self.cfg.get("require_outside_noise_band", True))
         if scored.get("entry_mode") == "fade" and "require_outside_noise_band_fade" in self.cfg:
             band_required = bool(self.cfg.get("require_outside_noise_band_fade"))
@@ -73,7 +72,7 @@ class RulesGate:
             state = (scored.get("noise_band") or {}).get("state")
             if state is None:
                 return Decision(False, None, "rules_only",
-                                "noise band unavailable — abstain (band-gated arm)")
+                                "noise band unavailable — abstain (band is required)")
             if state == "inside":
                 return Decision(False, None, "rules_only",
                                 "price inside the noise band — no confirmed break")

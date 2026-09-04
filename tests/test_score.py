@@ -1,4 +1,4 @@
-"""Faithfulness tests for the arm-E scorer — no network."""
+"""Faithfulness tests for the scorer — no network."""
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path

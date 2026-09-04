@@ -1,4 +1,4 @@
-"""Gate tests: rules_only == arm E, and the LLM can only veto, never add."""
+"""Gate tests: the rules stack, and that the LLM can only veto, never add."""
 import sys
 from pathlib import Path
 
@@ -39,14 +39,14 @@ def test_rules_no_band_gate_when_disabled():
     assert d.go
 
 
-# ---- per-mode band flag (arm C: drop the band on fades only) ---------------
+# ---- per-mode band flag (drop the band on fades only) ----------------------
 def _scored_mode(score, band_state, mode, direction="call"):
     return {"score": score, "would_have_direction": direction,
             "entry_mode": mode, "noise_band": {"state": band_state}}
 
 
 def test_fade_band_flag_off_admits_inside_fade():
-    # arm C: band on for momentum, OFF for fades -> an 'inside' FADE goes through
+    # band on for momentum, OFF for fades -> an 'inside' FADE goes through
     cfg = {"min_score": 0.70, "require_outside_noise_band": True,
            "require_outside_noise_band_fade": False}
     d = RulesGate(cfg).decide(_scored_mode(0.75, "inside", "fade"))
@@ -54,7 +54,7 @@ def test_fade_band_flag_off_admits_inside_fade():
 
 
 def test_fade_band_flag_off_still_gates_momentum():
-    # same arm-C config: a MOMENTUM entry inside the band is STILL blocked
+    # same config: a MOMENTUM entry inside the band is STILL blocked
     cfg = {"min_score": 0.70, "require_outside_noise_band": True,
            "require_outside_noise_band_fade": False}
     d = RulesGate(cfg).decide(_scored_mode(0.75, "inside", "momentum"))
@@ -62,7 +62,7 @@ def test_fade_band_flag_off_still_gates_momentum():
 
 
 def test_no_fade_flag_falls_back_to_base_gate():
-    # arm A/B (no _fade key): a fade inside the band is blocked, exactly as before
+    # no _fade key: a fade inside the band is blocked, exactly as before
     cfg = {"min_score": 0.70, "require_outside_noise_band": True}
     d = RulesGate(cfg).decide(_scored_mode(0.75, "inside", "fade"))
     assert not d.go and "inside" in d.rationale
@@ -104,7 +104,7 @@ def test_llm_unavailable_degrades_to_rules():
 
 
 # ---------------------------------------------------------------------------
-# Leader-regime ("T6") filter — added with the arm-C rebuild.
+# Leader-regime ("T6") filter.
 # ---------------------------------------------------------------------------
 from src.gate import RulesGate as _RG
 

@@ -1,15 +1,14 @@
 """Market data: intraday 5m bars (yfinance), rvol/band baselines, options (Alpaca).
 
-Underlying intraday 5m bars come from **yfinance** — the same real-time source
-the live arms use — because Alpaca's free plan delays the SIP feed by 15
-minutes, which starves a 0DTE scanner of the current session (at 09:49 the SIP
-feed still only had the 09:30 bar). yfinance's known corrupt-volume bars are
-winsorised by score.guard_volume, ported behaviourally from the live arms.
+Underlying intraday 5m bars come from **yfinance**, because Alpaca's free plan
+delays the SIP feed by 15 minutes, which starves a 0DTE scanner of the current
+session (at 09:49 the SIP feed still only had the 09:30 bar). yfinance's known
+corrupt-volume bars are winsorised by score.guard_volume.
 
 Option contracts, option quotes, and the leader DAILY bars (regime) stay on
 Alpaca: completed daily bars are not delayed, and execution is Alpaca-only.
-Baseline math mirrors _rvol_baseline_live / _band_baseline_live from
-intraday_0dte.py, now fed by yfinance 5m bars with the identical volume guard.
+The rvol and noise-band baselines are built from the same guarded 5m bars, so
+a corrupt bar cannot reach a baseline either.
 """
 from __future__ import annotations
 import time as _clock   # NB: `time` (below) is datetime.time; keep the clock separate
@@ -36,11 +35,11 @@ RVOL_LOOKBACK_DAYS = 10
 RVOL_MIN_SESSIONS = 8
 BAND_LOOKBACK_DAYS = 14
 BAND_MIN_SESSIONS = 10
-HIST_DAYS = 20          # calendar days of 5m history behind BOTH baselines (matches the live arms)
+HIST_DAYS = 20          # calendar days of 5m history behind BOTH baselines
 LEADER_FETCH_DAYS = 90      # ~60 sessions: comfortably more than the 20 an SMA needs
 RTH_OPEN_MOD = 570      # 09:30
 RTH_CLOSE_MOD = 960     # 16:00
-YF_RETRIES = 3          # this NAS IP also serves the 5 live arms polling yfinance
+YF_RETRIES = 3          # this host may run several agents polling yfinance
 YF_RETRY_SLEEP = 0.8    # seconds between attempts on a transient failure/empty
 
 
@@ -59,8 +58,8 @@ class MarketData:
         """Raw 5-minute yfinance bars for `period`, regular session only, ET index.
 
         Retries a few times on a transient failure or empty response: this
-        container shares its NAS IP with the five live arms, all polling yfinance
-        every 5 minutes, so an occasional rate-limit is expected. On total
+        container may share its host IP with other agents polling yfinance on
+        the same cadence, so an occasional rate-limit is expected. On total
         failure it returns an empty frame — the scorer then simply skips the
         symbol for that scan (no crash, no stale carry-over).
         """

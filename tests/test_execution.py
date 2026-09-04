@@ -141,7 +141,7 @@ def test_paper_startup_refuses_when_not_paper(monkeypatch):
         Executor(_StubMD(), _Cfg("paper"), broker=None)     # guard blocks startup
 
 # ---------------------------------------------------------------------------
-# Per-symbol session history that the arm-C entry rules read.
+# Per-symbol session history that the entry rules read.
 # ---------------------------------------------------------------------------
 from datetime import timedelta
 from src.execution import Position
@@ -231,7 +231,7 @@ def test_elapsed_minutes_never_goes_negative():
 
 
 # ---------------------------------------------------------------------------
-# Arm B: the two-tier scale-out LADDER exit (exit_mode="ladder"). Driven in
+# The two-tier scale-out LADDER exit (exit_mode="ladder"). Driven in
 # dry_run so no broker is needed; a mutable MD lets each manage() see a new mid.
 # ---------------------------------------------------------------------------
 from src.execution import Position
@@ -344,7 +344,7 @@ def test_ladder_one_lot_closes_outright_at_tier1():
 
 
 def test_arm_a_default_still_uses_single_scale_engine():
-    """No exit_mode => the arm-A single-scale engine, unchanged."""
+    """No exit_mode => the single-scale engine, unchanged."""
     md = _MutMD(1.00)
     cfg = _Cfg("dry_run")
     cfg.exits = {"profit_target_pct": 40, "premium_stop_pct": -65,
@@ -352,13 +352,13 @@ def test_arm_a_default_still_uses_single_scale_engine():
                  "runner_giveback_pct": 40}
     ex = Executor(md, cfg)
     pos = _lpos(); ex.positions.append(pos)
-    md.mid = 1.20                                        # +20% < arm-A's 40% target
+    md.mid = 1.20                                        # +20% < the 40% target
     assert ex.manage(datetime.now(ET)) == []            # ladder would have scaled here
     assert pos.qty == 50 and pos.scale_count == 0
 
 
 # ---------------------------------------------------------------------------
-# Stop-loss ladder (all hackathon arms, 2026-09-03): -20% sell half, -40% rest,
+# Stop-loss ladder (adopted 2026-09-03): -20% sell half, -40% rest,
 # -65% premium_stop kept as a deeper backstop. Shared by BOTH exit engines.
 # ---------------------------------------------------------------------------
 def _stop_ladder_exits(base):
@@ -422,7 +422,7 @@ def test_stop_ladder_disabled_by_default_leaves_engine_unchanged():
 
 
 def test_stop_ladder_works_in_scale_single_engine_too():
-    """Arm A (scale_single) also gets the -20/-40 stop ladder."""
+    """scale_single also gets the -20/-40 stop ladder."""
     md = _MutMD(1.00)
     cfg = _Cfg("dry_run")
     cfg.exits = _stop_ladder_exits({"profit_target_pct": 40, "premium_stop_pct": -65,
@@ -446,7 +446,7 @@ def test_stop_ladder_works_in_scale_single_engine_too():
 # no time stop and no profit target until -40% or the EOD flatten.
 # ---------------------------------------------------------------------------
 def _armA_stop_ex(mid):
-    """Arm A's engine (scale_single, no exit_mode) WITH the -20/-40 stop ladder."""
+    """The default engine (scale_single, no exit_mode) WITH the -20/-40 stop ladder."""
     md = _MutMD(mid)
     cfg = _Cfg("dry_run")
     cfg.exits = _stop_ladder_exits({"profit_target_pct": 40, "premium_stop_pct": -65,

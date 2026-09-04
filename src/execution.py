@@ -14,7 +14,7 @@ Partial fills are first-class (they appear once qty > 1):
   * a SELL that fills partially decrements the remaining qty and leaves the
     position open to retry — it is never marked closed until qty == 0.
 
-Exits (mirroring the live arms):
+Exits:
   * profit target is a SCALE-OUT — it sells half the opened qty ONCE and leaves a
     runner (a 1-lot has no half, so it closes outright);
   * the runner is trailed by giving back `runner_giveback_pct` of its PEAK GAIN
@@ -94,12 +94,12 @@ class Executor:
         self.max_open_premium = float(cfg.risk.get("max_open_premium_usd", 1e12))
         self.positions: list[Position] = []
         self.trades_today = 0
-        # Per-symbol session history the arm-C entry rules read. Written ONLY on a
+        # Per-symbol session history the entry rules read. Written ONLY on a
         # confirmed FULL close / confirmed entry, so a failed order never arms a
         # cooldown or burns a direction.
         self.last_exit: dict[str, tuple] = {}          # symbol -> (datetime, reason)
         self.directions_today: dict[str, set] = {}     # symbol -> {"call","put"}
-        # Entry-anchored dedup clock (the arms' `dedup_minutes`): last CONFIRMED
+        # Entry-anchored dedup clock (`dedup_minutes`): last CONFIRMED
         # entry time per (symbol, direction). Distinct from last_exit, which is
         # exit-anchored — this one throttles re-entry BEFORE anything closes, so
         # a symbol cannot be stacked every scan while its score stays high.
@@ -235,23 +235,21 @@ class Executor:
     def holds_open(self, symbol: str, direction: str) -> bool:
         """True if an OPEN tracked lot already exists on this symbol+direction.
 
-        The hackathon analog of arm C's already-holding guard
-        (paper_broker._held_symbol_directions): arm C reads the live broker book
-        and refuses any buy on a (symbol, direction) it is already holding, so it
-        carries at most ONE open lot per pair and re-enters only after that lot
-        has fully closed. The agent's in-memory open book is the faithful proxy
-        here — foreign/manual positions are flattened at startup, so what the
-        agent tracks as open IS what the account holds. Without this, the
-        entry-anchored dedup is only a 30-min throttle: once the window expires
-        the same still-qualifying signal stacks a SECOND lot on a symbol already
-        held (seen live 2026-08-31: IWM put at 10:37 then again at 11:07)."""
+        The agent carries at most ONE open lot per (symbol, direction) and
+        re-enters only after that lot has fully closed. Its in-memory open book
+        is a faithful stand-in for the broker's — foreign and manual positions
+        are flattened at startup, so what the agent tracks as open IS what the
+        account holds. Without this guard the entry-anchored dedup is only a
+        30-min throttle: once the window expires, the same still-qualifying
+        signal stacks a SECOND lot on a symbol already held (observed
+        2026-08-31: IWM at 10:37 and again at 11:07)."""
         return any(p.symbol == symbol and p.direction == direction
                    for p in self.open_positions)
 
     def mins_since_last_entry(self, symbol: str, direction: str, now: datetime):
         """Minutes since the last CONFIRMED entry on this symbol+direction, or
-        None if none yet. Feeds the entry-anchored dedup gate (arm C's
-        `dedup_minutes`), which stops a symbol from being re-entered every scan."""
+        None if none yet. Feeds the entry-anchored dedup gate
+        (`dedup_minutes`), which stops a symbol being re-entered every scan."""
         ts = self.last_entry.get((symbol, direction))
         if ts is None:
             return None
@@ -307,14 +305,14 @@ class Executor:
 
     def manage(self, now: datetime, force_eod: bool = False) -> list[ExitEvent]:
         """Dispatch to the configured exit engine. `exit_mode` selects it:
-        'scale_single' (default, arm A) or 'ladder' (arm B)."""
+        'scale_single' (the default) or 'ladder'."""
         if str(self.exits_cfg.get("exit_mode", "scale_single")) == "ladder":
             return self._manage_ladder(now, force_eod=force_eod)
         return self._manage_scale_single(now, force_eod=force_eod)
 
     def _manage_scale_single(self, now: datetime,
                              force_eod: bool = False) -> list[ExitEvent]:
-        """arm A: one profit-target scale-out (half) then a peak-gain-giveback
+        """scale_single: one profit-target scale-out (half) then a peak-gain-giveback
         runner trail. Each event (including the scale leg) is returned for the log."""
         events: list[ExitEvent] = []
         scale_on = bool(self.exits_cfg.get("scale_out_at_target", False))
@@ -354,7 +352,7 @@ class Executor:
 
     def _manage_ladder(self, now: datetime,
                        force_eod: bool = False) -> list[ExitEvent]:
-        """arm B: two-tier scale-out ladder.
+        """ladder: two-tier scale-out ladder.
 
           tier 1  at +tier1_target_pct (default 20%): sell HALF the opened qty.
           after tier 1, the runner is trailed by tier1_trail_price_drop_pct
@@ -362,8 +360,8 @@ class Executor:
                   falls that far from its high-water price.
           tier 2  if it instead reaches +tier2_target_pct (default 40%): sell
                   HALF of what remains, then the leftover rides the SAME
-                  peak-gain-giveback trail arm A uses (runner_giveback_pct).
-          premium_stop / time_stop apply as in arm A (time_stop only before
+                  peak-gain-giveback trail scale_single uses (runner_giveback_pct).
+          premium_stop / time_stop apply as in scale_single (time_stop only before
           tier 1, since after +20% the position is in profit).
 
         Everything is priced off the option MID from a fresh Alpaca quote, so this

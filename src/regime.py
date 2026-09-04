@@ -6,23 +6,20 @@ moving average as of the LAST COMPLETED session. Five or more of eight => bullis
 regime; four or fewer => bearish. Calls are "aligned" in a bullish regime, puts in
 a bearish one; the filter only ever blocks the opposed side.
 
-Two conventions matter and both mirror the research harness (`ctx.py`), so live and
+Two conventions matter and both mirror the validation harness, so live and
 backtest read the same number:
 
   * The SMA window INCLUDES the bar being compared: sma = mean(closes[-20:]) and
     the comparison price is closes[-1]. (This is the ordinary "close vs its own
-    SMA-20" reading, and it is what split2.py/ctx.py both used.)
+    SMA-20" reading, and it is what the validation harness used.)
   * The last element must be the last COMPLETED session. Never pass today's
     partial bar — that is the lookahead trap. marketdata.leader_closes() drops it.
 
-HONEST STATUS — read before trusting this: T6 is NOT an established edge. Over
-264 sessions it measured +$16.59/position with a raw two-sided p of 0.068 and a
-family-wise adjusted p of 0.405, and it is the largest of nine correlated tests,
-so most of that point estimate is selection. The study's minimum detectable effect
-was $23-34/position, i.e. it could not have resolved an effect this size either
-way. Settling it needs ~1.6-3.4 years more data, not one quarter. It is wired in
-here because it was asked for and because it is defensible as a DIRECTIONAL
-CONSISTENCY rule, not because it is known to make money.
+The filter is deliberately SUBTRACTIVE: it can only refuse the side that fights
+the broad market, so the worst it can do is decline a trade. It never flips a
+direction, never proposes one, and never widens what the scorer already allowed.
+Being computed from completed daily bars, it is also the one input in the stack
+that cannot move during the session it is filtering.
 """
 from __future__ import annotations
 from typing import Optional

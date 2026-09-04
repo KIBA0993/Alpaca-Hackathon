@@ -43,7 +43,7 @@ RUN grep -v '^streamlit' requirements.txt > /tmp/req.txt \
 COPY src/ ./src/
 COPY tests/ ./tests/
 # Glob so a clean checkout (which carries only config.json) builds, while a local
-# tree that also holds the sibling arms' configs can still build their images.
+# tree that also holds local config variants can still build their images.
 COPY config*.json ./
 COPY smoke_trade.py ./smoke_trade.py
 COPY nas/run_daily.py ./nas/run_daily.py
