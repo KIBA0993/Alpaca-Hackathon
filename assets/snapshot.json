@@ -1,8 +1,8 @@
 {
  "account": "PA38HG4D9653",
  "start_equity": 100000.0,
- "equity": 179087.12,
- "pct": 79.08712,
+ "equity": 162025.01,
+ "pct": 62.02501,
  "sessions": [
   {
    "day": "2026-08-31",
@@ -38,27 +38,41 @@
     "QQQ",
     "SPY"
    ],
-   "pnl": 75449.98999999999,
+   "pnl": 75342.89,
    "positions": 6
+  },
+  {
+   "day": "2026-09-04",
+   "buys": 2,
+   "sells": 3,
+   "contracts": 1200,
+   "symbols": [
+    "IWM",
+    "QQQ"
+   ],
+   "pnl": -16955.00999999998,
+   "positions": 2
   }
  ],
  "curve": [
   100000.0,
   89283.95999999999,
   103637.12999999999,
-  179087.12
+  178980.02,
+  162025.01
  ],
  "labels": [
   "Start",
   "2026-08-31",
   "2026-09-01",
-  "2026-09-03"
+  "2026-09-03",
+  "2026-09-04"
  ],
- "entries": 34,
- "exits": 43,
- "positions": 13,
+ "entries": 36,
+ "exits": 46,
+ "positions": 15,
  "still_open": 0,
- "orders_seen": 78,
+ "orders_seen": 83,
  "journal": [
   {
    "type": "regime",
@@ -384,5 +398,5 @@
    "max_tokens": 1024
   }
  },
- "generated_at": "2026-09-04T00:46:01+00:00"
+ "generated_at": "2026-09-04T14:32:16+00:00"
 }

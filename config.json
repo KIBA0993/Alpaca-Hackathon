@@ -73,6 +73,8 @@
   "scan": {
     "first_scan": "09:45",
     "scan_step_minutes": 5,
+    "manage_step_minutes": 1,
+    "manage_step_minutes_comment": "How often OPEN POSITIONS are re-checked, in minutes. Entries stay on scan_step_minutes; only the exit ladder runs at this faster cadence, priced off Alpaca option quotes, so the extra passes add no yfinance load. Clamped into [1, scan_step_minutes]. At 5 minutes a 0DTE contract can cross the whole -20/-40 ladder between two looks and exit only at the deeper rung; 1 minute narrows that window.",
     "max_alerts_per_run": 2,
     "max_alerts_per_run_comment": "Per-SCAN entry cap: at most this many NEW entries may open in a single scan pass, across all symbols; the rest are skipped that pass and reconsidered on the next one. 0 disables it. This is a per-run throttle, NOT a per-day total."
   },

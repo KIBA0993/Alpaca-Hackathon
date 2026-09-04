@@ -2,7 +2,7 @@
 
 **Alpaca AI Trading Agents Hackathon — one-page write-up**  
 Paper account `PA38HG4D9653` · single-leg long 0DTE on SPY / QQQ / IWM · paper only, no live path in the repo.  
-**Result: a fresh $100,000 account finished at $179,087 (+79.1%) across 3 trading sessions — 34 entries, 43 exits.**
+**Result: a fresh $100,000 account finished at $162,025 (+62.0%) across 4 trading sessions — 36 entries, 46 exits.**
 
 An autonomous agent that scans, scores, gates, sizes, executes and manages its own book with
 no human in the loop. Every control in it was validated against a year of real Alpaca OPRA
