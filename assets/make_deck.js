@@ -326,21 +326,18 @@ async function main() {
   // ---- 6 Alpaca infrastructure --------------------------------------------
   s = pres.addSlide();
   shell(s, "05  ·  Alpaca infrastructure");
-  title(s, "Built on Alpaca's CLI, not just the SDK");
+  title(s, "Every order goes through the Alpaca CLI");
   [
-    ["Orders via the Alpaca CLI", "alpaca order submit, then poll to a terminal state. The agent books the real broker fill, not a quote - so cash P&L is buy-fill against sell-fill."],
-    ["Paper endpoint, proven", "Refuses to place anything unless `alpaca doctor` resolves paper-api.alpaca.markets. The env var alone isn't proof - a profile's live_trade can route live."],
-    ["Idempotent submits", "On an ambiguous failure it reconciles by --client-order-id via `alpaca order get-by-client-id` before ever resubmitting. No duplicate, no orphan."],
-    ["Unattended and auditable", "Market data (5m bars, contract discovery, ATM quotes) via the Alpaca SDK. Isolated Docker container, one session per weekday, JSONL journal per scan."],
+    ["Orders placed through the CLI", "The agent runs `alpaca order submit` and waits for the order to fill. It records the price it actually got, so the profit and loss is real money in and out - not an estimate from a quote."],
+    ["Paper account, checked every time", "Before it places anything, the agent confirms `alpaca doctor` is pointing at the paper endpoint. If it is not, the agent does not trade."],
+    ["Never a duplicate order", "If a submit times out, the agent looks the order up by its own ID before trying again. The result is one order, or none - never two."],
+    ["Runs on its own, and logs it", "Prices and contracts come from Alpaca's market data API. It runs in its own container, once each weekday, and writes a log line for every decision."],
   ].forEach(([k, v], i) => {
     card(s, { x: 0.6 + (i % 2) * 6.18, y: 1.95 + Math.floor(i / 2) * 2.15, w: 5.95, h: 1.95,
       label: k, note: v, noteSize: 12 });
   });
-  s.addText("Requirement: projects must use Alpaca's MCP server or its CLI tools.   —   every order in the book above went through the CLI.",
-    { x: 0.6, y: 6.35, w: 12.13, h: 0.4, isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 11, color: GOLD });
-  s.addNotes("The CLI is not a box-tick. It is why the P&L two slides back is broker truth "
-    + "rather than a mid-price model.");
+  s.addNotes("The CLI is why the profit and loss two slides back is the real fill price "
+    + "from the broker, rather than a number the agent worked out itself.");
 
   // ---- 7 the audit trail ---------------------------------------------------
   s = pres.addSlide();
@@ -376,38 +373,11 @@ async function main() {
   s.addNotes("This is the differentiator. Show a refusal record on screen - a judge seeing a "
     + "complete decision trail, including the no-trades, is the most persuasive frame in the demo.");
 
-  // ---- 8 close -------------------------------------------------------------
-  s = pres.addSlide();
-  shell(s, "Every trade provable. Every loss capped.");
-  s.addText([
-    { text: "A fresh $100,000 account,", options: { color: INK, breakLine: true } },
-    { text: `${bk.sessions.length} sessions, ${signed(bk.pct)}.`, options: { color: GOLD } },
-  ], { x: 0.6, y: 1.5, w: 12.1, h: 1.9, isTextBox: true, margin: 0,
-       fontFace: SANS, fontSize: 46, bold: true, lineSpacingMultiple: 1.05 });
-  [
-    ["Max loss capped by the instrument", "not by code that has to remember"],
-    ["An AI that can only remove risk", "structurally unable to add a trade"],
-    ["Every order through the Alpaca CLI", "P&L is the real broker fill, not a quote"],
-    ["Every decision journaled", "including the ones it refused to take"],
-  ].forEach(([k, v], i) => {
-    const y = 3.75 + i * 0.66;
-    s.addText("—", { x: 0.6, y, w: 0.35, h: 0.4, isTextBox: true, margin: 0,
-      fontFace: SANS, fontSize: 15, color: GOLD });
-    s.addText([{ text: k, options: { color: INK, bold: true } },
-               { text: "   " + v, options: { color: INK2 } }],
-      { x: 1.0, y, w: 11.7, h: 0.4, isTextBox: true, margin: 0, fontFace: SANS, fontSize: 15 });
-  });
-  s.addText(`Alpaca paper account ${ACCT}  ·  paper trading only. Hypothetical results; not investment advice.`,
-    { x: 0.6, y: 6.85, w: 8.5, h: 0.3, isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 9, color: MUTED });
-  s.addNotes("Close on the four claims. Each one is checkable in the repo.");
-
-
-  // ---- 9 the required one-page write-up ------------------------------------
+  // ---- 8 the one-page write-up ---------------------------------------------
   // The hackathon accepts this as a slide, a section of the description, or a
   // repo page. It ships as all three; this is the slide form.
   s = pres.addSlide();
-  shell(s, "Required one-page write-up");
+  shell(s, "One-page write-up");
   title(s, "AI logic  ·  Risk gates  ·  Alpaca infrastructure");
   s.addShape("roundRect", { x: 0.6, y: 1.82, w: 12.13, h: 0.6, fill: { color: CARD },
     line: { color: GOLD, width: 1 }, rectRadius: 0.08 });
@@ -447,7 +417,10 @@ async function main() {
     "Runs unattended in an isolated Docker container, one session per weekday.",
     "Every scan appends one JSONL record with the full reasoning to logs/.",
   ]);
-  s.addNotes("This slide is the hackathon's required one-page write-up. The same content ships "
+  s.addText("Paper trading only. Hypothetical results; not investment advice.",
+    { x: 0.6, y: 6.85, w: 5.7, h: 0.3, isTextBox: true, margin: 0,
+      fontFace: MONO, fontSize: 9, color: MUTED });
+  s.addNotes("This slide is the one-page write-up. The same content ships "
     + "as docs/ONE_PAGER.md and docs/ONE_PAGER.pdf in the repo.");
 
   await pres.writeFile({ fileName: OUT });

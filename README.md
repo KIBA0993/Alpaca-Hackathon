@@ -1,10 +1,10 @@
 # Every Trade Provable. Every Loss Capped.
 
-> ### Required one-page write-up — AI logic · risk gates · Alpaca infrastructure
+> ### One-page write-up — AI logic · risk gates · Alpaca infrastructure
 > It ships in all three accepted forms:
 > **[`docs/ONE_PAGER.md`](docs/ONE_PAGER.md)** (repo page) ·
 > **[`docs/ONE_PAGER.pdf`](docs/ONE_PAGER.pdf)** (one printed page) ·
-> **slide 9 of [`assets/deck.pptx`](assets/deck.pptx)** (presentation).
+> **slide 8 of [`assets/deck.pptx`](assets/deck.pptx)** (presentation).
 >
 > **Try it live — [every-trade-provable.streamlit.app](https://every-trade-provable.streamlit.app)** ·
 > the result, the *real* gate you can drive yourself, and the decision journal.

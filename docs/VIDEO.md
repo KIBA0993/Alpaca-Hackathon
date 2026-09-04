@@ -5,7 +5,7 @@ back. lablab's own guidance asks you to *"begin with an introduction, discuss yo
 presentation, then showcase your project's functionalities"* — this script follows that
 order: hook, slides, live demo.
 
-Deck: `assets/deck.pdf` (9 slides — slide 9 is the required write-up, not narrated) ·
+Deck: `assets/deck.pdf` (8 slides — slide 8 is the write-up, not narrated) ·
 Cover: `assets/cover.png` · Live demo: <https://every-trade-provable.streamlit.app>
 
 ---
@@ -147,7 +147,7 @@ Read it conversationally. Bracketed lines are stage directions.
 > exactly why. That journal ships in the repo — clone it and check any decision against
 > the record.
 
-### 3:00 — 3:15 · Close  *[Slide 8]*
+### 3:00 — 3:15 · Close  *[Back to slide 1]*
 
 > A fresh hundred-thousand-dollar account, three sessions, up seventy-nine percent.
 >

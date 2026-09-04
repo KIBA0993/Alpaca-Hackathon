@@ -8,7 +8,7 @@
 #
 # Produces:
 #   assets/cover.png       1920x1080, 16:9   (lablab wants PNG/JPG, 16:9)
-#   assets/deck.pptx       9 slides
+#   assets/deck.pptx       8 slides
 #   assets/deck.pdf        the same deck     (lablab wants the slides as PDF)
 #   docs/ONE_PAGER.md      the required write-up
 #   docs/ONE_PAGER.pdf     verified to be exactly one page

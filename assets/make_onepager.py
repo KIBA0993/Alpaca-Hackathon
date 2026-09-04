@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render docs/ONE_PAGER.md - the hackathon's required one-page write-up.
+"""Render docs/ONE_PAGER.md - the one-page write-up.
 
     python3 assets/make_onepager.py
 
