@@ -71,10 +71,11 @@ def fetch():
     for o in fills:
         d = o["filled_at"][:10]
         r = by_day.setdefault(d, {"day": d, "buys": 0, "sells": 0, "contracts": 0,
-                                  "symbols": set()})
+                                  "symbols": set(), "contracts_traded": set()})
         r["buys" if o["side"] == "buy" else "sells"] += 1
         r["contracts"] += int(o["filled_qty"])
         r["symbols"].add(o.get("symbol", "")[:3])
+        r["contracts_traded"].add(o.get("symbol", ""))
     sessions = [by_day[d] for d in sorted(by_day)]
 
     # Realised P&L per traded session - the non-zero daily rows, plus today's if
@@ -87,6 +88,7 @@ def fetch():
     for i, s in enumerate(sessions):
         s["pnl"] = pls[i] if i < len(pls) else 0.0
         s["symbols"] = sorted(x for x in s["symbols"] if x)
+        s["positions"] = len(s.pop("contracts_traded"))
 
     # The curve is built FROM the sessions, so its point count can never drift
     # from the label count (the bug that made the deck unopenable).
@@ -106,6 +108,9 @@ def fetch():
         "labels": ["Start"] + [s["day"] for s in sessions],
         "entries": sum(1 for o in fills if o["side"] == "buy"),
         "exits": sum(1 for o in fills if o["side"] == "sell"),
+        "positions": len({o["symbol"] for o in fills}),
+        "still_open": len([p for p in _api("/v2/positions", h)
+                           if p.get("asset_class") == "us_option"]),
         "orders_seen": len(orders),
     }
 
@@ -145,8 +150,9 @@ def main():
     snap["generated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     OUT.write_text(json.dumps(snap, indent=1, default=str) + "\n")
     print(f"{OUT.relative_to(ROOT)}: ${snap['equity']:,.0f} ({snap['pct']:+.1f}%), "
-          f"{len(snap['sessions'])} sessions, {snap['entries']} entries / "
-          f"{snap['exits']} exits, {len(snap['journal'])} journal records")
+          f"{len(snap['sessions'])} sessions, {snap['positions']} positions "
+          f"({snap['entries']} buys / {snap['exits']} sells), "
+          f"{snap['still_open']} still open, {len(snap['journal'])} journal records")
 
 
 if __name__ == "__main__":

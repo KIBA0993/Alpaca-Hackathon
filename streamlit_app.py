@@ -152,12 +152,14 @@ with tab_r:
     c = st.columns(4)
     card(c[0], f"Alpaca paper · {len(SNAP['sessions'])} sessions", f"{pct:+.1f}%",
          f"$100,000 → {usd(equity)}", gold=True)
-    card(c[1], "Fills", f"{SNAP['entries']} / {SNAP['exits']}",
-         "entries / exits, all via the Alpaca CLI")
+    contracts = sum(x["contracts"] for x in SNAP["sessions"]) // 2
+    card(c[1], "Order fills", f"{SNAP['entries']} / {SNAP['exits']}",
+         f"buys / sells — {contracts:,} contracts in, {contracts:,} out")
     card(c[2], "Max loss per trade", "the premium",
          "single-leg long options — capped by the instrument")
-    card(c[3], "Open at expiry", "never",
-         f"hard flatten {CFG['risk'].get('eod_flatten', '15:50')} ET, every session")
+    card(c[3], "Open at expiry", "none",
+         f"{SNAP.get('still_open', 0)} contracts open now · hard flatten "
+         f"{CFG['risk'].get('eod_flatten', '15:50')} ET, every session")
 
     st.caption(f"Account `{SNAP['account']}` · "
                + (f"live, refreshed {live['at']}" if live
@@ -194,9 +196,21 @@ with tab_r:
     st.markdown("#### Every session")
     st.dataframe(
         [{"Session": s["day"], "Underlyings": ", ".join(s["symbols"]),
-          "Entries": s["buys"], "Exits": s["sells"], "Contracts": s["contracts"],
+          "Positions": s.get("positions", "—"),
+          "Buy fills": s["buys"], "Sell fills": s["sells"],
+          "Contracts traded": s["contracts"],
           "Realised P&L": usd(s["pnl"])} for s in SNAP["sessions"]],
         width="stretch", hide_index=True)
+    st.caption(
+        f"A **position** is one option contract — {SNAP.get('positions', '—')} of them "
+        "across the three sessions. A **buy fill** opens or adds to one; a **sell fill** "
+        "closes or trims one, so neither count is the number of trades. Exits scale out "
+        "— a winner sells half at +40% and the runner later, a loser sells half at −20% "
+        "and the rest at −40% — so closing one position usually takes more than one "
+        "order. Entries can stack the same way when a signal persists. What matters is "
+        "the bottom line: contracts bought and contracts sold match exactly on every "
+        "session, so the book ends each day flat, which is what you would expect from "
+        "an agent that never lets a 0DTE contract reach expiry.")
 
 # ========================================================== gate driver ===
 with tab_g:
