@@ -274,9 +274,32 @@ async function main() {
     note: "One session per weekday in an isolated container. Nobody approves a trade." });
   s.addNotes("Exit management runs before entry on every pass - the book is always managed first.");
 
-  // ---- 4 risk gates --------------------------------------------------------
+  // ---- 4 decision logic ----------------------------------------------------
   s = pres.addSlide();
-  shell(s, "03  ·  Risk gates");
+  shell(s, "03  ·  Decision logic");
+  title(s, "Three independent tests. A trade needs all three.");
+  flow(s, [["SCORED SIGNAL", "VWAP, OR break, RSI,\nEMA, relative volume"],
+           ["NOISE BAND", "is the break bigger than\nthe symbol's own noise?"],
+           ["LEADER REGIME", "5 of 8 mega-caps above\ntheir 20-day average"],
+           ["ORDER", "ATM long via the\nAlpaca CLI"]], 2.05, 1.55, 1);
+  card(s, { x: 0.6, y: 3.95, w: 5.95, h: 1.85, label: "The half-opening-range band",
+    value: "noise, not signal", valueSize: 22, valueColor: GOLD, valueH: 0.45,
+    note: "A break only counts if it clears half of that symbol's own opening range. The bar is set by the morning's actual behaviour rather than a fixed number, so a quiet SPY and a wild IWM are not judged the same way.",
+    noteSize: 11 });
+  card(s, { x: 6.78, y: 3.95, w: 5.95, h: 1.85, label: "Leader breadth",
+    value: "removes, never adds", valueSize: 20, valueColor: INK, valueH: 0.45,
+    note: "5 of 8 mega-caps above their 20-day average as of the last completed session. The regime can only rule out the opposed direction - it never creates a trade the score did not already propose.",
+    noteSize: 11 });
+  s.addText("A trade needs the score at or above 0.70, price outside the band, and the direction agreeing with the regime. Any one of the three says no and nothing is placed.",
+    { x: 0.6, y: 6.0, w: 12.13, h: 0.4, isTextBox: true, margin: 0,
+      fontFace: SANS, fontSize: 12, color: INK2 });
+  s.addNotes("The three tests are independent of each other, so they fail for different reasons. "
+    + "The band is the one worth pausing on: the threshold comes from that morning's own range, "
+    + "not from a constant someone tuned.");
+
+  // ---- 5 risk gates --------------------------------------------------------
+  s = pres.addSlide();
+  shell(s, "04  ·  Risk gates");
   title(s, "Risk is structural before it is procedural");
   s.addShape("roundRect", { x: 0.6, y: 1.88, w: 12.13, h: 0.78, fill: { color: CARD },
     line: { color: GOLD, width: 1 }, rectRadius: 0.08 });
@@ -300,28 +323,6 @@ async function main() {
     { x: 0.6, y: 6.42, w: 12.13, h: 0.4, isTextBox: true, margin: 0,
       fontFace: SANS, fontSize: 11, color: INK2 });
   s.addNotes("174 network-free tests cover the scorer, these gates, the sizing maths and the execution path.");
-
-  // ---- 5 AI logic ----------------------------------------------------------
-  s = pres.addSlide();
-  shell(s, "04  ·  AI logic");
-  title(s, "An AI that is structurally incapable of adding risk");
-  flow(s, [["SCORED SIGNAL", "VWAP, OR break, RSI,\nEMA, relative volume"],
-           ["RULES GATE", "score ≥ 0.70, outside the\nhalf-OR band, regime agrees"],
-           ["CLAUDE VETO", "bull / bear debate,\nregime read - no-go only"],
-           ["ORDER", "ATM long via the\nAlpaca CLI"]], 2.05, 1.55, 2);
-  card(s, { x: 0.6, y: 3.95, w: 5.95, h: 1.85, label: "The one-way rule",
-    value: "go → no-go only", valueSize: 22, valueColor: GOLD, valueH: 0.45,
-    note: "The model can remove a trade the rules approved. It can never resurrect one they rejected, so the deterministic path is a strict subset of the AI path - and both are auditable against each other.",
-    noteSize: 11 });
-  card(s, { x: 6.78, y: 3.95, w: 5.95, h: 1.85, label: "Fails closed, never open",
-    value: "degrade, don't guess", valueSize: 20, valueColor: INK, valueH: 0.45,
-    note: "A missing key or unparseable reply degrades to the deterministic gate and says so in the journal. The agent never trades on a model response it could not read.",
-    noteSize: 11 });
-  s.addText("The scored sessions ran the deterministic gate; the Claude veto ships tested and runnable via --decision-mode llm.",
-    { x: 0.6, y: 6.0, w: 12.13, h: 0.4, isTextBox: true, margin: 0,
-      fontFace: MONO, fontSize: 10, color: MUTED });
-  s.addNotes("Most submissions say 'LLM proposes, code decides'. This goes further: the model is "
-    + "wired so it cannot increase exposure even if it wanted to.");
 
   // ---- 6 Alpaca infrastructure --------------------------------------------
   s = pres.addSlide();
