@@ -6,7 +6,7 @@
 > **[`docs/ONE_PAGER.pdf`](docs/ONE_PAGER.pdf)** (one printed page) ·
 > **slide 8 of [`assets/deck.pptx`](assets/deck.pptx)** (presentation).
 >
-> **Try it live — [every-trade-provable.streamlit.app](https://every-trade-provable.streamlit.app)** ·
+> **Run it yourself — an interactive Streamlit demo** ([one command](#the-interactive-demo)) ·
 > the result, the *real* gate you can drive yourself, and the decision journal.
 >
 > Alpaca paper account `PA38HG4D9653`, opened fresh for this event at $100,000.
@@ -104,12 +104,12 @@ checked against the record. The audit trail is the product.
 | `src/broker_cli.py` | order placement through the Alpaca **CLI** (submit + poll for fill) |
 | `src/agent.py` | the scan→gate→risk→execute→manage loop |
 | `src/journal.py` | append-only JSONL decision log |
-| `streamlit_app.py` | the hosted demo — drives the real gate, risk and exit code |
+| `streamlit_app.py` | the interactive demo — drives the real gate, risk and exit code |
 | `docs/research.md` | the year of OPRA validation behind these controls |
 
-## The hosted demo
+## The interactive demo
 
-**[every-trade-provable.streamlit.app](https://every-trade-provable.streamlit.app)** — three
+A small **Streamlit app** (`streamlit_app.py`) surfaces three
 things a repo cannot show you:
 
 | tab | what it does |

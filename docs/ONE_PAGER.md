@@ -8,7 +8,7 @@ An autonomous agent that scans, scores, gates, sizes, executes and manages its o
 no human in the loop. Every control in it was validated against a year of real Alpaca OPRA
 option bars — 264 sessions, 4,544 alerts — and what did not survive that testing is not in
 the code.
-**Try it: https://every-trade-provable.streamlit.app** · Repo: `github.com/KIBA0993/Alpaca-Hackathon`
+**Run the interactive demo:** `streamlit run streamlit_app.py` · Repo: `github.com/KIBA0993/Alpaca-Hackathon`
 
 ## 1 · AI logic
 
